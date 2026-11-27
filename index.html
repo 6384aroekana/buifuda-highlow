@@ -87,7 +87,7 @@
     #titleScreen{ padding-top:calc(32dvh + env(safe-area-inset-top)); gap:.7dvh; }
   }
   #titleScreen > *:not(#sakuraCanvas){ position:relative; z-index:1; flex:0 0 auto; }
-  #sakuraCanvas{
+  #sakuraCanvas, #gameSakuraCanvas{
     position:absolute; inset:0; width:100%; height:100%;
     pointer-events:none; z-index:6;
   }
@@ -149,7 +149,8 @@
   }
   .sub-btn:active{ transform:translateY(1px); }
   .version{ margin:0; font-size:11.5px; color:#e6dfc9; letter-spacing:.18em; text-shadow:0 1px 4px rgba(10,8,30,.95), 0 0 10px rgba(10,8,30,.7); }
-  .title-meta{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .title-meta{ display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; row-gap:6px; }
+  .idea-btn{ color:#ffe9a8; border-color:rgba(185,140,52,.6); }
   .changelog-btn{
     min-height:30px; padding:4px 14px;
     font-size:11.5px; letter-spacing:.14em; font-weight:700;
@@ -176,7 +177,8 @@
   }
 
   /* ---------- game screen ---------- */
-  #gameScreen{ gap:1.2dvh; }
+  #gameScreen{ position:relative; overflow:hidden; gap:1.2dvh; }
+  #gameScreen > *:not(#gameSakuraCanvas){ position:relative; z-index:1; }
   .top-row{
     width:100%; display:flex; align-items:center; justify-content:space-between;
     padding-right:56px; min-height:30px;
@@ -280,6 +282,13 @@
   }
   .final-record{ display:none; font-size:clamp(14px,4vw,17px); color:#ff9d97; letter-spacing:.1em; margin-top:2px; text-shadow:0 1px 5px rgba(10,8,30,.95), 0 0 12px rgba(10,8,30,.65); }
   .final-record.show{ display:block; }
+  .oshi-title-note{
+    display:none; margin-top:5px;
+    font-size:clamp(12.5px,3.6vw,14.5px); color:#e2dbc6; letter-spacing:.08em;
+    text-shadow:0 1px 4px rgba(10,8,30,.95), 0 0 10px rgba(10,8,30,.65);
+  }
+  .oshi-title-note.show{ display:block; }
+  .oshi-title-note.got{ color:#ffd94d; font-weight:700; }
 
   /* buttons */
   .guess-row{ display:flex; gap:14px; width:min(420px,94vw); }
@@ -308,6 +317,40 @@
   .oshi-badge.show{ display:block; }
   .feedback.bonus{ color:#f0b429; }
 
+  /* ---------- yaku (pair combo) banner ----------
+     Shown for a few seconds when the field card and the flipped card
+     form one of the named pairs. Display only: no effect on the score. */
+  .yaku-banner{
+    padding:10px 26px; border-radius:999px;
+    background:linear-gradient(180deg,#ffe98a,#d9a94a);
+    color:#3a2403; border:2px solid #fff3c4;
+    font-size:clamp(17px,5vw,23px); font-weight:700; letter-spacing:.06em; white-space:nowrap;
+    box-shadow:0 6px 24px rgba(0,0,0,.55), 0 0 22px rgba(255,217,77,.55);
+    opacity:0; pointer-events:none; text-align:center;
+  }
+  .yaku-banner .yaku-new{
+    display:inline-block; margin-left:9px; padding:2px 8px 3px; vertical-align:3px;
+    background:#c73e3a; color:#fff; border:1.5px solid #fff; border-radius:999px;
+    font-size:.56em; font-weight:700; letter-spacing:.1em; line-height:1.3;
+    box-shadow:0 2px 7px rgba(0,0,0,.4);
+  }
+  #gameScreen > #yakuBanner{
+    position:absolute; left:50%; top:36%; z-index:8;
+    transform:translate(-50%,-50%);
+  }
+  #yakuBanner.show{ animation:yakuPop 3s ease forwards; }
+  @keyframes yakuPop{
+    0%{ opacity:0; transform:translate(-50%,-50%) scale(.7); }
+    10%{ opacity:1; transform:translate(-50%,-50%) scale(1.07); }
+    17%{ transform:translate(-50%,-50%) scale(1); }
+    82%{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-62%) scale(1); }
+  }
+  @keyframes yakuFade{ 0%{ opacity:0; } 10%{ opacity:1; } 82%{ opacity:1; } 100%{ opacity:0; } }
+  @media (prefers-reduced-motion: reduce){
+    #yakuBanner.show{ animation:yakuFade 3s ease forwards; }
+  }
+
   .tap-hint{
     display:none; margin-top:8px;
     font-size:clamp(12.5px,3.6vw,14.5px); color:#e2dbc6; letter-spacing:.1em;
@@ -330,7 +373,7 @@
   .oshi-sub b{ color:#f0b429; }
   .oshi-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    width:min(94vw, 54dvh);
+    width:min(94vw, 50dvh);
   }
   .oshi-card{
     position:relative; padding:0; min-height:0; background:none; border:none; border-radius:6px;
@@ -348,6 +391,43 @@
     font-size:clamp(10px,2.8vw,12.5px); font-weight:700;
     padding:2px 6px; line-height:1.3; white-space:nowrap;
   }
+  /* each grid cell: the tappable card (with a small X badge on its
+     bottom-right corner), then the title line below it */
+  .oshi-cell{ display:flex; flex-direction:column; }
+  /* wrapper so the X badge can overlay the card's bottom-right corner */
+  .oshi-card-wrap{ position:relative; }
+  /* small round X badge overlaid on the card; opens the VTuber's X profile
+     in a new tab without triggering the oshi selection */
+  .oshi-x-badge{
+    position:absolute; right:4px; bottom:4px; z-index:2;
+    width:22px; height:22px; border-radius:50%;
+    background:#000; border:1.5px solid rgba(255,255,255,.9);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,.6);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .oshi-x-badge:active{ background:#2b2b2b; }
+  /* title earned with this card + its play count, under each oshi card */
+  .oshi-cell .oshi-title-line{
+    display:block; margin-top:4px; min-height:2.7em;
+    font-size:9.5px; line-height:1.35; letter-spacing:.02em;
+    color:var(--ink-dim); text-align:center;
+  }
+  .oshi-cell .ot-name{ display:block; color:#ffd94d; font-weight:700; font-size:10px; }
+  .oshi-cell .ot-count{ display:block; }
+  /* small link to the VTuber's X profile, shown under a card */
+  .x-link{
+    display:inline-block; margin-top:2px; align-self:center;
+    font-size:10.5px; letter-spacing:.02em; color:#ffe9a8;
+    text-decoration:underline; text-underline-offset:2px;
+    text-shadow:0 1px 4px rgba(10,8,30,.95), 0 0 9px rgba(10,8,30,.7);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .x-link:active{ color:#ffd94d; }
+  /* the oshi's X link on the game-over screen (shown only when over) */
+  #overOshiX{ display:none; margin:9px auto 0; font-size:12.5px; }
+  #overOshiX.show{ display:inline-block; }
+  .detail-oshi .x-link{ margin-top:0; font-size:11px; }
 
   /* ---------- used-cards strip (deep indigo frame) ---------- */
   .used-strip{
@@ -484,6 +564,22 @@
   .howto-body p{ margin:0 0 10px; }
   .howto-body p:last-child{ margin-bottom:0; }
 
+  /* ---------- yaku list + idea button (inside the how-to body) ---------- */
+  .yaku-sec{ margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+  .yaku-sec-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+  .yaku-sec-title{ color:var(--ink); font-weight:700; letter-spacing:.08em; }
+  .yaku-progress{
+    flex:0 0 auto; font-size:12px; font-weight:700; letter-spacing:.05em; white-space:nowrap;
+    color:#241a05; background:linear-gradient(180deg,#e9c877,#b98c34);
+    border:1px solid #ffe9a8; border-radius:999px; padding:2px 10px; line-height:1.4;
+  }
+  .yaku-list{ list-style:none; margin:0 0 14px; padding:0; }
+  .yaku-list li{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:2px 0; }
+  .yaku-list .yp{ color:var(--ink); white-space:nowrap; }
+  .yaku-list .yn{ color:#ffd94d; font-weight:700; text-align:right; }
+  .yaku-list .yn.locked{ color:var(--ink-dim); font-weight:400; letter-spacing:.14em; }
+  .yaku-idea-btn{ width:100%; }
+
   /* ---------- screen capture ---------- */
   .capture-btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -498,6 +594,19 @@
   .capture-btn:disabled{ opacity:.35; cursor:default; transform:none; box-shadow:none; }
   #gameCaptureBtn{ display:none; margin:12px auto 0; }
   #gameCaptureBtn.show{ display:inline-flex; }
+  .x-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 20px;
+    font-size:15px; font-weight:700; letter-spacing:.1em;
+    color:#fff; background:#0b0b10;
+    border:1px solid rgba(255,255,255,.45); border-radius:10px;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+  }
+  .x-btn svg{ width:16px; height:16px; flex:0 0 auto; fill:currentColor; }
+  .x-btn:active{ transform:translateY(1px); }
+  .x-btn:disabled{ opacity:.35; cursor:default; transform:none; box-shadow:none; }
+  #gameShareBtn{ display:none; margin:12px auto 0; }
+  #gameShareBtn.show{ display:inline-flex; }
   #histCaptureBtn{ width:min(320px,86vw); }
   .capture-overlay{
     position:fixed; inset:0; z-index:80; display:none;
@@ -529,13 +638,16 @@
     display:flex; gap:8px; width:min(430px,96vw); flex:0 0 auto;
   }
   #historyScreen .hist-btn-row .capture-btn,
+  #historyScreen .hist-btn-row .x-btn,
   #historyScreen .hist-btn-row .clear-btn{
-    flex:0 0 calc(50% - 4px); width:calc(50% - 4px);
-    height:46px; min-height:46px; padding:0 6px;
-    font-size:13.5px; letter-spacing:.07em; border-radius:9px; white-space:nowrap;
+    flex:1 1 0; width:auto; min-width:0;
+    height:46px; min-height:46px; padding:0 4px;
+    font-size:12.5px; letter-spacing:.03em; border-radius:9px; white-space:nowrap;
   }
-  #historyScreen #histCaptureBtn{ width:calc(50% - 4px); gap:6px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
-  #historyScreen .hist-btn-row .capture-btn svg{ width:16px; height:16px; }
+  #historyScreen #histCaptureBtn{ width:auto; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  #historyScreen .hist-btn-row .capture-btn svg{ width:15px; height:15px; }
+  #historyScreen .hist-btn-row .x-btn{ gap:5px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  #historyScreen .hist-btn-row .x-btn svg{ width:13px; height:13px; }
   #historyScreen #histBackBtn{
     width:min(430px,96vw); height:46px; min-height:46px; padding:0 12px;
     font-size:14px; letter-spacing:.18em; flex:0 0 auto;
@@ -616,8 +728,9 @@
     <button class="sub-btn" id="howtoBtn">遊び方</button>
   </div>
   <div class="title-meta">
-    <p class="version">ver 1.7</p>
+    <p class="version">ver 1.8</p>
     <button class="changelog-btn" id="changelogBtn">変更履歴</button>
+    <button class="changelog-btn idea-btn" id="titleYakuIdeaBtn">役目のアイディアを送る</button>
   </div>
 </section>
 
@@ -630,6 +743,7 @@
 
 <!-- ================= GAME ================= -->
 <section class="screen" id="gameScreen">
+  <canvas id="gameSakuraCanvas" aria-hidden="true"></canvas>
   <div class="top-row">
     <div class="player-name"><span class="pname" id="playerName">ゲスト</span><span id="playerSuffix"> さん</span></div>
     <div class="best-label"><span class="lap-badge" id="lapBadge">1周目</span><span id="bestText">自己ベスト</span> <b id="bestNum">0</b><span id="bestUnit"> 回</span></div>
@@ -668,6 +782,8 @@
     </div>
   </div>
 
+  <div class="yaku-banner" id="yakuBanner" aria-hidden="true"></div>
+
   <div class="used-strip" id="usedStrip" aria-label="十二ヶ月の札の使用状況">
     <div class="used-strip-head"><span id="stripTitle">十二ヶ月の札</span><span class="lap-note" id="stripLap">1周目</span></div>
     <div class="used-grid" id="usedGrid"></div>
@@ -679,10 +795,16 @@
     <div class="streak-label" id="streakLabel">連続記録</div>
     <div class="streak-num" id="streakNum">0<span class="unit">回</span></div>
     <div class="final-record" id="finalRecord"></div>
+    <div class="oshi-title-note" id="oshiTitleNote"></div>
+    <a class="x-link" id="overOshiX" href="https://x.com/bihada_turun" target="_blank" rel="noopener noreferrer">𝕏 @bihada_turun</a>
     <div class="tap-hint" id="tapHint">画面をタップするとタイトルに戻ります</div>
     <button class="capture-btn" id="gameCaptureBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
       <span id="gameCaptureLabel">画面キャプチャ</span>
+    </button>
+    <button class="x-btn" id="gameShareBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"></path></svg>
+      <span id="gameShareLabel">Xでシェア</span>
     </button>
   </div>
 
@@ -707,6 +829,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
       <span id="histCaptureLabel">画面キャプチャ</span>
     </button>
+    <button class="x-btn" id="histShareBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"></path></svg>
+      <span id="histShareLabel">Xでシェア</span>
+    </button>
     <button class="clear-btn" id="histClearBtn">履歴クリア</button>
   </div>
   <div class="clear-confirm" id="clearConfirm" role="alertdialog" aria-label="履歴クリアの確認">
@@ -717,7 +843,7 @@
     </div>
   </div>
   <button class="back-btn" id="histBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.7</p>
+  <p class="version">ver 1.8</p>
 </section>
 
 <!-- ================= HOWTO ================= -->
@@ -737,7 +863,7 @@
   <h2 class="sub-title" id="changelogTitle">変更<span class="accent">履歴</span></h2>
   <div class="howto-body changelog-body" id="changelogBody"></div>
   <button class="back-btn" id="changelogBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.7</p>
+  <p class="version">ver 1.8</p>
 </section>
 
 <!-- ================= HISTORY DETAIL ================= -->
@@ -771,6 +897,7 @@
   <div class="detail-oshi">
     <img id="detailOshiImg" src="data:image/jpeg;base64,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" alt="推し札" />
     <div class="d-oshi-label" id="detailOshiLabel">推し札</div>
+    <a class="x-link" id="detailOshiX" href="https://x.com/bihada_turun" target="_blank" rel="noopener noreferrer">𝕏 @bihada_turun</a>
   </div>
   <button class="back-btn" id="detailBackBtn">履歴に戻る</button>
 </section>
@@ -839,6 +966,13 @@
     { label:"12월", name:"12월 · 오동나무와 봉황" }
   ];
   var LANG = "ja";
+  /* each VTuber's X handle, by month; profile URL: https://x.com/<handle> */
+  var X_HANDLES = [null,
+    "bihada_turun", "sakuya_shami", "TokoTabi", "_Aoi_Wasabi_", "aroe_kana", "hanakoto82",
+    "sumeragi_kou", "tsukatsukiotoha", "MahokaKido", "H0em0ri_Rinu", "yusha_noto", "Ui__Ren"
+  ];
+  function xProfileUrl(m){ return "https://x.com/" + X_HANDLES[m]; }
+  function xLinkLabel(m){ return "𝕏 @" + X_HANDLES[m]; }
   function monthData(m){ return LANG === "en" ? MONTHS_EN[m] : (LANG === "ko" ? MONTHS_KO[m] : MONTHS[m]); }
   function monthLabel(m){ return monthData(m).label; }
   function monthName(m){ return monthData(m).name; }
@@ -854,6 +988,7 @@
       changelogBtn: "変更履歴",
       changelogTitle: '変更<span class="accent">履歴</span>',
       changelogItems: [
+        { v:"ver 1.8", text:"結果をXに投稿できるボタンを追加／ゲーム画面で桜が舞い、2周目で銀色・3周目で金色に変化／同じ推しを使い続けると称号がもらえる／各VさんのXへのリンクを追加／札の組み合わせで役名を表示／役目のアイディアをXで送れるボタンを追加／役目一覧は出すまで？？？表示に" },
         { v:"ver 1.7", text:"履歴画面のボタンを小さくして一覧を広げた" },
         { v:"ver 1.6", text:"タイトルロゴと背景を和風デザインに変更／タイトル画面に桜のアニメーションを追加／韓国語に対応" },
         { v:"ver 1.5", text:"高い／低いのボタンの位置を入れ替え" },
@@ -878,6 +1013,19 @@
       streakUnit: "回",
       tapHint: "画面をタップするとタイトルに戻ります",
       capture: "画面キャプチャ",
+      captureShort: "画面キャプチャ",
+      shareX: "Xでシェア",
+      shareTitle: "ぶいふだ🎴High & Low",
+      shareText: function(streak, lap, oshiName){
+        return "ぶいふだ🎴High & Lowで" + streak + "回連続正解！（" + lap + "周目／推し札：" + oshiName + "）\n" +
+          "https://6384aroekana.github.io/buifuda-highlow/\n#ぶいふだハイロー";
+      },
+      yakuIdeaBtn: "役目のアイディアを送る",
+      yakuIdeaText: "役目案：○月×○月＝○○\n#ぶいふだハイロー #ぶいふだ役目案\nhttps://6384aroekana.github.io/buifuda-highlow/",
+      yakuListTitle: "現在の役目（全7つ）",
+      yakuLocked: "？？？",
+      yakuNew: "NEW",
+      yakuProgress: function(n, total){ return "役目 " + n + "/" + total; },
       highMain: "高い ▲",
       highSub: "HIGH・次は大きい",
       lowMain: "低い ▼",
@@ -914,6 +1062,7 @@
       feedbackCorrect: function(l){ return "正解！ " + l + " でした"; },
       feedbackWrong: function(l){ return "はずれ… " + l + " でした"; },
       feedbackOshi: function(l){ return "推しボーナス！ 正解 ＋3回（" + l + "）"; },
+      yakuBanner: function(name){ return "役目：" + name; },
       feedbackLap: "1周クリア！ お見事！",
       feedbackLapOshi: "推しボーナス＆1周クリア！ ＋3回",
       histStreakUnit: " 回連続正解",
@@ -922,6 +1071,7 @@
       detailPlayedSuffix: " のプレイ",
       oshiAlt: "推し札 ",
       oshiSelectAria: function(name){ return name + "を推しに選ぶ"; },
+      xProfileAria: function(name){ return name + "のXプロフィールを開く"; },
       usedLabel: function(m){ return m + "月"; },
       capRecordSuffix: " さんの記録",
       capStreakLabel: "連 続 記 録",
@@ -931,7 +1081,13 @@
       capOthers: function(n){ return "…ほか " + n + " 件"; },
       capCurrent: "今の札",
       capNext: "次の札",
-      capOshi: "推し札"
+      capOshi: "推し札",
+      titles: ["初見リスナー", "常連さん", "古参リスナー", "ガチ恋勢", "最古参", "生涯推し"],
+      titleCount: function(n){ return n + "回"; },
+      titleStatus: function(name, n){ return "推し称号：" + name + "（" + n + "回）"; },
+      titleGot: function(name){ return "称号ゲット：" + name; },
+      capTitle: function(name, n){ return "称号：" + name + "（" + n + "回）"; },
+      capTitleSuffix: function(name){ return "／称号：" + name; }
     },
     en: {
       guest: "Guest",
@@ -944,6 +1100,7 @@
       changelogBtn: "Changelog",
       changelogTitle: 'Change<span class="accent">log</span>',
       changelogItems: [
+        { v:"ver 1.8", text:"Added a button to post results to X / Cherry blossoms drift on the game screen, turning silver on lap 2 and gold on lap 3 / Earn titles by sticking with the same fave card / Added a link to each VTuber's X profile / Certain card pairs now show a combo name / Added a button to send combo ideas via X / Combo names in the list stay hidden as ??? until you get them" },
         { v:"ver 1.7", text:"Smaller buttons on the History screen, with more room for the list" },
         { v:"ver 1.6", text:"New Japanese-style title logo and background / Cherry blossoms fall on the title screen / Korean language added" },
         { v:"ver 1.5", text:"Swapped the High and Low buttons" },
@@ -968,6 +1125,19 @@
       streakUnit: "",
       tapHint: "Tap anywhere to return to the title",
       capture: "Save Result Image",
+      captureShort: "Capture",
+      shareX: "Share on X",
+      shareTitle: "Buifuda 🎴 High & Low",
+      shareText: function(streak, lap, oshiName){
+        return "I got " + streak + " in a row in Buifuda 🎴 High & Low! (Lap " + lap + " / Fave card: " + oshiName + ")\n" +
+          "https://6384aroekana.github.io/buifuda-highlow/\n#ぶいふだハイロー";
+      },
+      yakuIdeaBtn: "Send a Combo Idea",
+      yakuIdeaText: "Combo idea: Month × Month = Name\n#ぶいふだハイロー #ぶいふだ役目案\nhttps://6384aroekana.github.io/buifuda-highlow/",
+      yakuListTitle: "Current Combos (7)",
+      yakuLocked: "???",
+      yakuNew: "NEW",
+      yakuProgress: function(n, total){ return "Combos " + n + "/" + total; },
       highMain: "HIGH ▲",
       highSub: "Next is higher",
       lowMain: "LOW ▼",
@@ -1004,6 +1174,7 @@
       feedbackCorrect: function(l){ return "Correct! It was " + l; },
       feedbackWrong: function(l){ return "Miss... It was " + l; },
       feedbackOshi: function(l){ return "Fave bonus! Correct +3 (" + l + ")"; },
+      yakuBanner: function(name){ return "役目：" + name; },
       feedbackLap: "Lap cleared! Well done!",
       feedbackLapOshi: "Fave bonus & lap cleared! +3",
       histStreakUnit: " in a row",
@@ -1012,6 +1183,7 @@
       detailPlayedSuffix: "",
       oshiAlt: "Fave card ",
       oshiSelectAria: function(name){ return "Choose " + name + " as your fave"; },
+      xProfileAria: function(name){ return "Open " + name + "'s X profile"; },
       usedLabel: function(m){ return MONTHS_EN[m].label; },
       capRecordSuffix: "'s Record",
       capStreakLabel: "S T R E A K",
@@ -1021,7 +1193,13 @@
       capOthers: function(n){ return "...and " + n + " more"; },
       capCurrent: "Current",
       capNext: "Next",
-      capOshi: "Fave"
+      capOshi: "Fave",
+      titles: ["First-Time Viewer", "Regular", "Long-Time Fan", "Devoted Fan", "OG Fan", "Lifelong Fan"],
+      titleCount: function(n){ return n + (n === 1 ? " play" : " plays"); },
+      titleStatus: function(name, n){ return "Fave title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
+      titleGot: function(name){ return "New title earned: " + name; },
+      capTitle: function(name, n){ return "Title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
+      capTitleSuffix: function(name){ return " / Title: " + name; }
     },
     ko: {
       guest: "게스트",
@@ -1034,6 +1212,7 @@
       changelogBtn: "변경 이력",
       changelogTitle: '변경<span class="accent"> 이력</span>',
       changelogItems: [
+        { v:"ver 1.8", text:"결과를 X에 게시할 수 있는 버튼을 추가 / 게임 화면에 벚꽃이 흩날리고, 2바퀴째에 은색·3바퀴째에 금색으로 변화 / 같은 최애를 계속 사용하면 칭호를 받을 수 있다 / 각 V님의 X 링크를 추가 / 패의 조합으로 역 이름 표시 / 역 아이디어를 X로 보낼 수 있는 버튼을 추가 / 역 목록은 직접 낼 때까지 ??? 표시" },
         { v:"ver 1.7", text:"기록 화면의 버튼을 작게 하고 목록 표시 영역을 넓혔다" },
         { v:"ver 1.6", text:"타이틀 로고와 배경을 일본풍 디자인으로 변경 / 타이틀 화면에 벚꽃 애니메이션 추가 / 한국어 지원 추가" },
         { v:"ver 1.5", text:"높음/낮음 버튼 위치 교체" },
@@ -1058,6 +1237,19 @@
       streakUnit: "회",
       tapHint: "화면을 탭하면 타이틀로 돌아갑니다",
       capture: "화면 캡처",
+      captureShort: "화면 캡처",
+      shareX: "X에 공유",
+      shareTitle: "부이후다🎴High & Low",
+      shareText: function(streak, lap, oshiName){
+        return "부이후다🎴High & Low에서 " + streak + "회 연속 정답! (" + lap + "바퀴째 / 최애 패: " + oshiName + ")\n" +
+          "https://6384aroekana.github.io/buifuda-highlow/\n#ぶいふだハイロー";
+      },
+      yakuIdeaBtn: "역 아이디어 보내기",
+      yakuIdeaText: "역 아이디어: ○월 × ○월 = ○○\n#ぶいふだハイロー #ぶいふだ役目案\nhttps://6384aroekana.github.io/buifuda-highlow/",
+      yakuListTitle: "현재 역 (전 7개)",
+      yakuLocked: "???",
+      yakuNew: "NEW",
+      yakuProgress: function(n, total){ return "역 " + n + "/" + total; },
       highMain: "높다 ▲",
       highSub: "HIGH · 다음이 더 크다",
       lowMain: "낮다 ▼",
@@ -1094,6 +1286,7 @@
       feedbackCorrect: function(l){ return "정답! " + l + "이었습니다"; },
       feedbackWrong: function(l){ return "아쉽네요… " + l + "이었습니다"; },
       feedbackOshi: function(l){ return "최애 보너스! 정답 +3회 (" + l + ")"; },
+      yakuBanner: function(name){ return "役目：" + name; },
       feedbackLap: "한 바퀴 클리어! 대단해요!",
       feedbackLapOshi: "최애 보너스 & 한 바퀴 클리어! +3회",
       histStreakUnit: "회 연속 정답",
@@ -1102,6 +1295,7 @@
       detailPlayedSuffix: "의 플레이",
       oshiAlt: "최애 패 ",
       oshiSelectAria: function(name){ return "최애로 선택: " + name; },
+      xProfileAria: function(name){ return name + "의 X 프로필 열기"; },
       usedLabel: function(m){ return m + "월"; },
       capRecordSuffix: " 님의 기록",
       capStreakLabel: "연 속 기 록",
@@ -1111,7 +1305,13 @@
       capOthers: function(n){ return "…그 외 " + n + "건"; },
       capCurrent: "현재 패",
       capNext: "다음 패",
-      capOshi: "최애 패"
+      capOshi: "최애 패",
+      titles: ["첫 방문 시청자", "단골 시청자", "고참 시청자", "찐팬", "최고참", "평생 최애"],
+      titleCount: function(n){ return n + "회"; },
+      titleStatus: function(name, n){ return "최애 칭호: " + name + " (" + n + "회)"; },
+      titleGot: function(name){ return "칭호 획득: " + name; },
+      capTitle: function(name, n){ return "칭호: " + name + " (" + n + "회)"; },
+      capTitleSuffix: function(name){ return " / 칭호: " + name; }
     }
   };
   function t(){ return STRINGS[LANG]; }
@@ -1132,16 +1332,21 @@
   var playerNameEl = $("playerName"), bestNumEl = $("bestNum");
   var currentFrame = $("currentFrame"), currentSparkles = $("currentSparkles"), nextSparkles = $("nextSparkles");
   var lapBadge = $("lapBadge"), stripLap = $("stripLap");
+  var oshiTitleNote = $("oshiTitleNote");
+  var yakuBanner = $("yakuBanner"), yakuTimer = null;
+  var overOshiX = $("overOshiX");
 
   function currentPlayerName(){ return enteredName ? enteredName : t().guest; }
   var deck = [], current = null, next = null, oshi = null;
   var streak = 0, best = 0, busy = false, gameOver = false;
-  var history = [], showTime = true, lap = 1, usedSet = {}, histRecorded = false, nextRevealed = false, enteredName = "";
+  var history = [], showTime = true, lap = 1, usedSet = {}, histRecorded = false, nextRevealed = false, enteredName = "", newTitleName = null;
 
   /* ---------- localStorage persistence (history + show-time setting) ---------- */
   var LS_HISTORY = "buifuda-highlow-history-v1";
   var LS_SHOWTIME = "buifuda-highlow-showtime-v1";
   var LS_LANG = "buifuda-highlow-lang-v1";
+  var LS_COUNTS = "buifuda-highlow-oshi-counts-v1";
+  var LS_YAKU = "buifuda-highlow-yaku-v1";
   function lsGet(k){ try { return window.localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k, v){ try { window.localStorage.setItem(k, v); } catch(e){} }
   function saveHistory(){
@@ -1180,6 +1385,44 @@
   else {
     var navLang = (navigator.language || "en").toLowerCase();
     LANG = navLang.indexOf("ja") === 0 ? "ja" : (navLang.indexOf("ko") === 0 ? "ko" : "en");
+  }
+
+  /* ---------- oshi titles: games played per fave card ----------
+     Counts live in their own localStorage entry. On load they are
+     merged with a tally of the play history already on the device
+     (taking the larger of the two), so games played before titles
+     existed count toward them too. Clearing the history list does
+     not take earned titles away. */
+  var TITLE_TIERS = [1, 5, 15, 30, 50, 100];
+  var oshiCounts = loadOshiCounts();
+  function loadOshiCounts(){
+    var stored = {};
+    var raw = lsGet(LS_COUNTS);
+    if (raw){
+      try {
+        var o = JSON.parse(raw);
+        if (o){ for (var s = 1; s <= 12; s++) stored[s] = +o[s] || 0; }
+      } catch(e){}
+    }
+    var fromHist = {};
+    for (var h = 0; h < history.length; h++){
+      var hm = history[h].oshi;
+      fromHist[hm] = (fromHist[hm] || 0) + 1;
+    }
+    var out = {};
+    for (var m = 1; m <= 12; m++) out[m] = Math.max(stored[m] || 0, fromHist[m] || 0);
+    return out;
+  }
+  function saveOshiCounts(){ lsSet(LS_COUNTS, JSON.stringify(oshiCounts)); }
+  saveOshiCounts();
+  function titleIndexFor(count){
+    var idx = -1;
+    for (var i = 0; i < TITLE_TIERS.length; i++){ if (count >= TITLE_TIERS[i]) idx = i; }
+    return idx;
+  }
+  function titleNameFor(count){
+    var idx = titleIndexFor(count);
+    return idx < 0 ? null : t().titles[idx];
   }
 
   /* ---------- title fan layout ----------
@@ -1242,22 +1485,36 @@
   });
   layoutFan();
 
-  /* ---------- sakura petals drifting over the title screen ----------
+  /* ---------- sakura petals drifting over the title and game screens ----------
      Real programmatic animation on a canvas (not a video): each petal
      falls slowly, sways side to side, tilts and flutters as it goes.
-     The canvas has pointer-events:none, so it never blocks taps. */
-  var sakuraCv = $("sakuraCanvas");
+     The canvases have pointer-events:none, so they never block taps.
+     The title screen always shows pink petals; on the game screen the
+     petal colour follows the lap — pink on lap 1, silver on lap 2 and
+     gold from lap 3 on. The palette is read on every frame, so the
+     colour switches the moment a new lap begins. */
+  var SAKURA_PALETTES = {
+    pink:   ["#ffe3ef", "#ffb9d2", "#ff93ba"],
+    silver: ["#ffffff", "#dde3ec", "#a9b4c6"],
+    gold:   ["#fff7cc", "#ffdf6b", "#e0a92e"]
+  };
+  function sakuraPaletteForLap(n){
+    if (n >= 3) return SAKURA_PALETTES.gold;
+    if (n === 2) return SAKURA_PALETTES.silver;
+    return SAKURA_PALETTES.pink;
+  }
   var reducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  if (sakuraCv && sakuraCv.getContext){
-    var sctx = sakuraCv.getContext("2d");
-    var petals = [], sakuraW = 0, sakuraH = 0, sakuraDpr = 1;
-    function sizeSakura(){
-      var r = titleScreen.getBoundingClientRect();
+  function createSakura(canvasEl, screenEl, petalCount, getPalette){
+    if (!canvasEl || !canvasEl.getContext) return null;
+    var ctx = canvasEl.getContext("2d");
+    var petals = [], W = 0, H = 0, dpr = 1, lastTs = null;
+    function sizeCanvas(){
+      var r = screenEl.getBoundingClientRect();
       if (!r.width || !r.height) return;
-      sakuraDpr = Math.min(window.devicePixelRatio || 1, 2);
-      sakuraW = r.width; sakuraH = r.height;
-      sakuraCv.width = Math.round(sakuraW * sakuraDpr);
-      sakuraCv.height = Math.round(sakuraH * sakuraDpr);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = r.width; H = r.height;
+      canvasEl.width = Math.round(W * dpr);
+      canvasEl.height = Math.round(H * dpr);
     }
     function makePetal(seedY){
       return {
@@ -1274,76 +1531,84 @@
       };
     }
     function drawPetal(p, t){
-      var x = p.x * sakuraW + Math.sin(p.phase + t * p.swayFreq) * p.swayAmp;
-      var y = p.y * sakuraH;
+      var x = p.x * W + Math.sin(p.phase + t * p.swayFreq) * p.swayAmp;
+      var y = p.y * H;
       var ang = Math.sin(p.phase * 1.3 + t * p.rotFreq) * 0.85;
       var flip = Math.cos(p.phase + t * p.flipFreq);
       var sx = 0.25 + 0.75 * Math.abs(flip);
       var s = p.size;
-      sctx.save();
-      sctx.translate(x, y);
-      sctx.rotate(ang);
-      sctx.scale(sx, 1);
-      sctx.globalAlpha = p.alpha;
-      var g = sctx.createLinearGradient(0, -s, 0, s);
-      g.addColorStop(0, "#ffe3ef");
-      g.addColorStop(0.55, "#ffb9d2");
-      g.addColorStop(1, "#ff93ba");
-      sctx.fillStyle = g;
-      sctx.beginPath();
-      sctx.moveTo(-s * 0.16, -s * 0.78);
-      sctx.lineTo(0, -s * 0.5);
-      sctx.lineTo(s * 0.16, -s * 0.78);
-      sctx.bezierCurveTo(s * 0.85, -s * 0.45, s * 0.8, s * 0.5, 0, s);
-      sctx.bezierCurveTo(-s * 0.8, s * 0.5, -s * 0.85, -s * 0.45, -s * 0.16, -s * 0.78);
-      sctx.closePath();
-      sctx.fill();
-      sctx.restore();
+      var pal = getPalette();
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      ctx.scale(sx, 1);
+      ctx.globalAlpha = p.alpha;
+      var g = ctx.createLinearGradient(0, -s, 0, s);
+      g.addColorStop(0, pal[0]);
+      g.addColorStop(0.55, pal[1]);
+      g.addColorStop(1, pal[2]);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.16, -s * 0.78);
+      ctx.lineTo(0, -s * 0.5);
+      ctx.lineTo(s * 0.16, -s * 0.78);
+      ctx.bezierCurveTo(s * 0.85, -s * 0.45, s * 0.8, s * 0.5, 0, s);
+      ctx.bezierCurveTo(-s * 0.8, s * 0.5, -s * 0.85, -s * 0.45, -s * 0.16, -s * 0.78);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     }
-    var PETAL_COUNT = 16;
-    for (var pi = 0; pi < PETAL_COUNT; pi++) petals.push(makePetal(true));
-    sizeSakura();
-    function drawSakuraStatic(){
-      if (!sakuraW) sizeSakura();
-      if (!sakuraW) return;
-      sctx.setTransform(sakuraDpr, 0, 0, sakuraDpr, 0, 0);
-      sctx.clearRect(0, 0, sakuraW, sakuraH);
+    for (var pi = 0; pi < petalCount; pi++) petals.push(makePetal(true));
+    sizeCanvas();
+    function drawStatic(){
+      if (!W) sizeCanvas();
+      if (!W) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
       for (var i = 0; i < petals.length; i++) drawPetal(petals[i], i * 1.7);
     }
     window.addEventListener("resize", function(){
-      sizeSakura();
-      if (reducedMotion) drawSakuraStatic();
+      sizeCanvas();
+      if (reducedMotion) drawStatic();
     });
     if (reducedMotion){
-      drawSakuraStatic();
+      drawStatic();
     } else {
-      var sakuraLastTs = null;
-      var sakuraLoop = function(ts){
-        requestAnimationFrame(sakuraLoop);
-        if (!titleScreen.classList.contains("active")){ sakuraLastTs = ts; return; }
-        if (!sakuraW) sizeSakura();
-        if (!sakuraW){ sakuraLastTs = ts; return; }
-        var dt = sakuraLastTs == null ? 0.016 : Math.min((ts - sakuraLastTs) / 1000, 0.05);
-        sakuraLastTs = ts;
+      var loop = function(ts){
+        requestAnimationFrame(loop);
+        if (!screenEl.classList.contains("active")){ lastTs = ts; return; }
+        if (!W) sizeCanvas();
+        if (!W){ lastTs = ts; return; }
+        var dt = lastTs == null ? 0.016 : Math.min((ts - lastTs) / 1000, 0.05);
+        lastTs = ts;
         var t = ts / 1000;
-        sctx.setTransform(sakuraDpr, 0, 0, sakuraDpr, 0, 0);
-        sctx.clearRect(0, 0, sakuraW, sakuraH);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
         for (var i = 0; i < petals.length; i++){
           var p = petals[i];
-          p.y += (p.vy * dt) / sakuraH;
+          p.y += (p.vy * dt) / H;
           if (p.y > 1.06){ petals[i] = makePetal(false); continue; }
           drawPetal(p, t);
         }
       };
-      requestAnimationFrame(sakuraLoop);
+      requestAnimationFrame(loop);
     }
+    return {
+      /* reduced-motion mode draws a single still frame, so a lap change
+         asks for a redraw to pick up the new petal colour */
+      refresh: function(){ if (reducedMotion) drawStatic(); }
+    };
   }
+  createSakura($("sakuraCanvas"), titleScreen, 16, function(){ return SAKURA_PALETTES.pink; });
+  var gameSakura = createSakura($("gameSakuraCanvas"), gameScreen, 10, function(){ return sakuraPaletteForLap(lap); });
 
   /* build the oshi selection grid (12 cards) */
   var oshiGrid = $("oshiGrid");
-  var oshiBtns = [null], oshiLabels = [null];
+  var oshiBtns = [null], oshiLabels = [null], oshiTitleLines = [null], oshiBadges = [null];
   for (var om = 1; om <= 12; om++){
     (function(m){
+      var cell = document.createElement("div");
+      cell.className = "oshi-cell";
       var b = document.createElement("button");
       b.type = "button";
       b.className = "oshi-card";
@@ -1356,6 +1621,24 @@
       lb.textContent = monthLabel(m);
       b.appendChild(im);
       b.appendChild(lb);
+      var wrap = document.createElement("div");
+      wrap.className = "oshi-card-wrap";
+      wrap.appendChild(b);
+      /* small round X badge on the card's bottom-right corner; it is a
+         sibling of the button inside the wrapper, so tapping it opens the
+         profile in a new tab and never triggers the oshi selection */
+      var xb = document.createElement("a");
+      xb.className = "oshi-x-badge";
+      xb.href = xProfileUrl(m);
+      xb.target = "_blank";
+      xb.rel = "noopener noreferrer";
+      xb.setAttribute("aria-label", t().xProfileAria(monthName(m)));
+      xb.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" fill="#ffffff" aria-hidden="true" focusable="false"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"/></svg>';
+      wrap.appendChild(xb);
+      cell.appendChild(wrap);
+      var tl = document.createElement("span");
+      tl.className = "oshi-title-line";
+      cell.appendChild(tl);
       b.addEventListener("click", function(){
         oshi = m;
         initAudio();
@@ -1366,8 +1649,32 @@
       });
       oshiBtns.push(b);
       oshiLabels.push(lb);
-      oshiGrid.appendChild(b);
+      oshiTitleLines.push(tl);
+      oshiBadges.push(xb);
+      oshiGrid.appendChild(cell);
     })(om);
+  }
+
+  /* under each oshi card: the title earned with that card (gold) and
+     how many games have been played with it */
+  function renderOshiTitles(){
+    for (var m = 1; m <= 12; m++){
+      var el = oshiTitleLines[m];
+      if (!el) continue;
+      var c = oshiCounts[m] || 0;
+      var name = titleNameFor(c);
+      el.innerHTML = "";
+      if (name){
+        var ns = document.createElement("span");
+        ns.className = "ot-name";
+        ns.textContent = name;
+        el.appendChild(ns);
+      }
+      var cs = document.createElement("span");
+      cs.className = "ot-count";
+      cs.textContent = t().titleCount(c);
+      el.appendChild(cs);
+    }
   }
 
   /* build the used-cards strip: 12 mini cards in the indigo frame.
@@ -1403,6 +1710,9 @@
   function renderLap(){
     lapBadge.textContent = t().lap(lap);
     stripLap.textContent = t().lap(lap);
+    /* petal colour follows the lap; animated mode picks it up on the
+       next frame, reduced-motion mode needs this explicit redraw */
+    if (gameSakura && gameSakura.refresh) gameSakura.refresh();
   }
 
   /* sparkle burst when the oshi card appears (sparkles + gold frame only, no text) */
@@ -1489,11 +1799,91 @@
     highBtn.disabled = !on; lowBtn.disabled = !on;
   }
 
+  /* ---------- yaku: named pairs of the field card + the flipped card ----------
+     Order does not matter (3→8 and 8→3 are the same pair). Display only:
+     showing a yaku never changes the win/loss result or the score. The
+     yaku names themselves stay in Japanese in every UI language. */
+  var YAKU = {
+    "1-5": "温泉大好き",
+    "3-5": "ところむらやま",
+    "3-8": "ココロリゾネート",
+    "3-9": "花見で一杯(とこまほ)",
+    "3-10": "ベストフレンド",
+    "6-12": "なしてにゃあ",
+    "8-9": "月見で一杯"
+  };
+  function yakuKeyFor(a, b){
+    var lo = Math.min(a, b), hi = Math.max(a, b);
+    return lo + "-" + hi;
+  }
+  function yakuNameFor(a, b){
+    return YAKU[yakuKeyFor(a, b)] || null;
+  }
+  /* ---------- yaku collection (zukan): which combos the player has
+     actually pulled off on this device. Stored as { "3-8": true, ... }
+     in localStorage; a combo's name stays hidden as ??? in the how-to
+     list until it has been seen in a real game. ---------- */
+  var yakuSeen = loadYakuSeen();
+  function loadYakuSeen(){
+    var out = {};
+    var raw = lsGet(LS_YAKU);
+    if (!raw) return out;
+    try {
+      var o = JSON.parse(raw);
+      if (o){ for (var k in YAKU){ if (Object.prototype.hasOwnProperty.call(YAKU, k) && o[k]) out[k] = true; } }
+    } catch(e){}
+    return out;
+  }
+  function saveYakuSeen(){ lsSet(LS_YAKU, JSON.stringify(yakuSeen)); }
+  function yakuTotal(){ var n = 0; for (var k in YAKU){ if (Object.prototype.hasOwnProperty.call(YAKU, k)) n++; } return n; }
+  function yakuUnlockedCount(){
+    var n = 0;
+    for (var k in YAKU){ if (Object.prototype.hasOwnProperty.call(YAKU, k) && yakuSeen[k]) n++; }
+    return n;
+  }
+  function isYakuUnlocked(a, b){ return !!yakuSeen[yakuKeyFor(a, b)]; }
+  /* record a combo the player just pulled off; returns true only the
+     very first time, so the caller can flag the banner with NEW */
+  function markYakuSeen(a, b){
+    var key = yakuKeyFor(a, b);
+    if (!YAKU[key] || yakuSeen[key]) return false;
+    yakuSeen[key] = true;
+    saveYakuSeen();
+    return true;
+  }
+  function showYakuBanner(name, isNew){
+    yakuBanner.innerHTML = "";
+    var main = document.createElement("span");
+    main.textContent = t().yakuBanner(name);
+    yakuBanner.appendChild(main);
+    if (isNew){
+      var badge = document.createElement("span");
+      badge.className = "yaku-new";
+      badge.textContent = t().yakuNew || "NEW";
+      yakuBanner.appendChild(badge);
+    }
+    yakuBanner.classList.remove("show");
+    void yakuBanner.offsetWidth;
+    yakuBanner.classList.add("show");
+    if (yakuTimer) clearTimeout(yakuTimer);
+    yakuTimer = setTimeout(function(){ yakuBanner.classList.remove("show"); }, 3100);
+  }
+  function hideYakuBanner(){
+    yakuBanner.classList.remove("show");
+    if (yakuTimer){ clearTimeout(yakuTimer); yakuTimer = null; }
+  }
+
   function startGame(){
     streak = 0; gameOver = false; busy = false;
     lap = 1; histRecorded = false; usedSet = {};
     lastResult = null;
+    newTitleName = null;
+    oshiTitleNote.textContent = "";
+    oshiTitleNote.className = "oshi-title-note";
+    overOshiX.classList.remove("show");
     gameCaptureBtn.classList.remove("show");
+    gameShareBtn.classList.remove("show");
+    hideYakuBanner();
     gameScreen.classList.remove("over");
     tapHint.classList.remove("show");
     deck = buildDeck(0);
@@ -1525,6 +1915,15 @@
     }
 
     setTimeout(function(){
+      /* the flipped card is now face up: if the pair on the table is one
+         of the named combos, celebrate it with the yaku banner */
+      var yaku = yakuNameFor(fromCard, revealed);
+      if (yaku){
+        /* first time ever pulling this combo: unlock it in the
+           collection and flag the banner with a NEW badge */
+        var yakuIsNew = markYakuSeen(fromCard, revealed);
+        showYakuBanner(yaku, yakuIsNew);
+      }
       var correct = isHigh ? (revealed > fromCard) : (revealed < fromCard);
       if (correct){
         var bonus = (revealed === oshi || fromCard === oshi);
@@ -1573,14 +1972,37 @@
         gameScreen.classList.add("over");
         if (!histRecorded){
           histRecorded = true;
+          /* this game counts toward the oshi's title; remember whether
+             it crossed a tier so the game-over screen can announce it */
+          var prevTitleIdx = titleIndexFor(oshiCounts[oshi] || 0);
+          oshiCounts[oshi] = (oshiCounts[oshi] || 0) + 1;
+          saveOshiCounts();
+          var nowTitleIdx = titleIndexFor(oshiCounts[oshi]);
+          newTitleName = nowTitleIdx > prevTitleIdx ? t().titles[nowTitleIdx] : null;
           lastResult = {
             streak: streak, oshi: oshi, from: fromCard, to: revealed,
             lap: lap, time: new Date()
           };
           history.unshift(lastResult);
           saveHistory();
+          renderOshiTitles();
         }
+        var curTitleName = titleNameFor(oshiCounts[oshi] || 0);
+        if (newTitleName){
+          oshiTitleNote.textContent = t().titleGot(newTitleName);
+          oshiTitleNote.className = "oshi-title-note show got";
+        } else if (curTitleName){
+          oshiTitleNote.textContent = t().titleStatus(curTitleName, oshiCounts[oshi] || 0);
+          oshiTitleNote.className = "oshi-title-note show";
+        } else {
+          oshiTitleNote.textContent = "";
+          oshiTitleNote.className = "oshi-title-note";
+        }
+        overOshiX.href = xProfileUrl(oshi);
+        overOshiX.textContent = xLinkLabel(oshi);
+        overOshiX.classList.add("show");
         gameCaptureBtn.classList.add("show");
+        gameShareBtn.classList.add("show");
         busy = false;
       }
     }, 580);
@@ -1762,6 +2184,7 @@
     histClearBtn.style.display = "";
     histClearBtn.disabled = !history.length;
     histCaptureBtn.disabled = !history.length;
+    histShareBtn.disabled = !history.length;
     histList.innerHTML = "";
     if (!history.length){
       var empty = document.createElement("div");
@@ -1822,6 +2245,9 @@
     $("detailStreakNum").innerHTML = rec.streak + '<span class="unit">' + t().streakUnit + '</span>';
     $("detailOshiImg").src = MONTHS[rec.oshi].img;
     $("detailOshiImg").alt = t().oshiAlt + monthName(rec.oshi);
+    var detailOshiX = $("detailOshiX");
+    detailOshiX.href = xProfileUrl(rec.oshi);
+    detailOshiX.textContent = xLinkLabel(rec.oshi);
     var dd = $("detailDate");
     dd.textContent = showTime ? fmtTime(rec.time) + t().detailPlayedSuffix : "";
     dd.style.display = showTime ? "" : "none";
@@ -1925,11 +2351,11 @@
     }
   }
 
-  /* game-over result card: final pair of cards, streak, lap, oshi */
-  function captureGameOver(){
-    if (!lastResult) return;
-    var rec = lastResult;
-    Promise.all([
+  /* game-over result card: final pair of cards, streak, lap, oshi.
+     Returns a Promise for the composed canvas, so both the capture
+     overlay and the X share flow use the exact same image. */
+  function buildResultCanvas(rec){
+    return Promise.all([
       loadImg(MONTHS[rec.from].img),
       loadImg(MONTHS[rec.to].img),
       loadImg(MONTHS[rec.oshi].img)
@@ -1986,16 +2412,30 @@
       ctx.font = "28px " + SERIF;
       ctx.fillText(t().capLapEnd(rec.lap) + (showTime ? " ・ " + fmtTime(rec.time) : ""), W / 2, ry + 302);
 
+      /* the title earned with this oshi card, under the lap line */
+      var recTitle = titleNameFor(oshiCounts[rec.oshi] || 0);
+      if (recTitle){
+        ctx.fillStyle = "#ffd94d";
+        ctx.font = "700 30px " + SERIF;
+        ctx.fillText(t().capTitle(recTitle, oshiCounts[rec.oshi] || 0), W / 2, ry + 350);
+      }
+
       ctx.textAlign = "left";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.7", 72, H - 74);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.8", 72, H - 74);
       var ow = 92, ox = W - 72 - ow, oy = H - 96 - Math.round(ow * 355 / 218);
       drawCapCard(ctx, imgs[2], ox, oy, ow, null);
       ctx.fillStyle = "#ffd94d";
       ctx.font = "700 24px " + SERIF;
       ctx.textAlign = "center";
       ctx.fillText(t().capOshi, ox + ow / 2, H - 74);
+      return cv;
+    });
+  }
+  function captureGameOver(){
+    if (!lastResult) return;
+    buildResultCanvas(lastResult).then(function(cv){
       showCapture(cv, "buifuda-result.png");
     }).catch(function(){});
   }
@@ -2045,9 +2485,21 @@
         ctx.fillStyle = "#f5efe0";
         ctx.font = "700 40px " + SERIF;
         ctx.fillText(rec.streak + t().histStreakUnit, 176, y + 42);
+        /* meta line: fave card + lap, plus the title held with that
+           card as of this run (plays with it up to and including it);
+           the font shrinks a step or two if the line would overflow */
+        var playsThen = 0;
+        for (var j = r; j < history.length; j++){ if (history[j].oshi === rec.oshi) playsThen++; }
+        var rowTitle = titleNameFor(playsThen);
+        var metaStr = t().histMeta(monthName(rec.oshi), rec.lap) + (rowTitle ? t().capTitleSuffix(rowTitle) : "");
         ctx.fillStyle = "#c9c2ab";
-        ctx.font = "26px " + SERIF;
-        ctx.fillText(t().histMeta(monthName(rec.oshi), rec.lap), 176, y + 92);
+        var metaSize = 26;
+        ctx.font = metaSize + "px " + SERIF;
+        while (ctx.measureText(metaStr).width > W - 176 - 84 && metaSize > 17){
+          metaSize -= 2;
+          ctx.font = metaSize + "px " + SERIF;
+        }
+        ctx.fillText(metaStr, 176, y + 92);
         if (showTime){
           ctx.textAlign = "right";
           ctx.font = "26px " + SERIF;
@@ -2063,11 +2515,15 @@
       ctx.textAlign = "center";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.7", W / 2, H - 58);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.8", W / 2, H - 58);
       showCapture(cv, "buifuda-history.png");
     }).catch(function(){});
   }
 
+  /* tapping the oshi's X link must not trigger the tap-to-title handler */
+  overOshiX.addEventListener("click", function(e){
+    e.stopPropagation();
+  });
   gameCaptureBtn.addEventListener("click", function(e){
     /* keep the game-over tap-to-title handler from firing */
     e.stopPropagation();
@@ -2079,6 +2535,55 @@
     if (!history.length) return;
     sfxClick();
     captureHistory();
+  });
+
+  /* ================= SHARE TO X =================
+     Where the Web Share API can hand over files (iPhone Safari etc.),
+     the result image and the post text go through the share sheet so
+     the player can pick X there. Everywhere else, fall back to the X
+     post intent with the text (which carries the game URL) only. */
+  var gameShareBtn = $("gameShareBtn"), histShareBtn = $("histShareBtn");
+  function openXIntent(text){
+    window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text), "_blank", "noopener");
+  }
+  function shareResultToX(rec){
+    if (!rec) return;
+    var text = t().shareText(rec.streak, rec.lap, monthName(rec.oshi));
+    if (!navigator.share || !navigator.canShare){ openXIntent(text); return; }
+    buildResultCanvas(rec).then(function(cv){
+      if (!cv.toBlob){ openXIntent(text); return; }
+      cv.toBlob(function(blob){
+        var file = null;
+        if (blob){
+          try { file = new File([blob], "buifuda-result.png", { type: "image/png" }); } catch(e){ file = null; }
+        }
+        function shareOrIntent(payload){
+          navigator.share(payload).catch(function(err){
+            if (err && err.name === "AbortError") return; /* player closed the sheet */
+            openXIntent(text);
+          });
+        }
+        if (file && navigator.canShare({ files: [file] })){
+          shareOrIntent({ files: [file], text: text, title: t().shareTitle });
+        } else if (navigator.canShare({ text: text })){
+          shareOrIntent({ text: text, title: t().shareTitle });
+        } else {
+          openXIntent(text);
+        }
+      }, "image/png");
+    }).catch(function(){ openXIntent(text); });
+  }
+  gameShareBtn.addEventListener("click", function(e){
+    /* keep the game-over tap-to-title handler from firing */
+    e.stopPropagation();
+    initAudio();
+    sfxClick();
+    shareResultToX(lastResult);
+  });
+  histShareBtn.addEventListener("click", function(){
+    if (!history.length) return;
+    sfxClick();
+    shareResultToX(history[0]);
   });
   $("captureCloseBtn").addEventListener("click", function(){
     sfxClick();
@@ -2134,7 +2639,9 @@
     $("detailStreakLabel").textContent = S.streakLabel;
     tapHint.textContent = S.tapHint;
     $("gameCaptureLabel").textContent = S.capture;
-    $("histCaptureLabel").textContent = S.capture;
+    $("histCaptureLabel").textContent = S.captureShort;
+    $("gameShareLabel").textContent = S.shareX;
+    $("histShareLabel").textContent = S.shareX;
     $("highMain").textContent = S.highMain;
     $("highSub").textContent = S.highSub;
     $("lowMain").textContent = S.lowMain;
@@ -2152,8 +2659,58 @@
     $("histBackBtn").textContent = S.backTitle;
     $("howtoTitle").innerHTML = S.howtoTitle;
     $("howtoBody").innerHTML = S.howtoParas.join("");
+    /* current yaku (combo) list + "send an idea on X" button, appended
+       inside the scrollable how-to body; the yaku names themselves stay
+       in Japanese in every UI language, like the in-game banner */
+    (function(){
+      var ysec = document.createElement("div");
+      ysec.className = "yaku-sec";
+      var yhead = document.createElement("div");
+      yhead.className = "yaku-sec-head";
+      var ytitle = document.createElement("div");
+      ytitle.className = "yaku-sec-title";
+      ytitle.textContent = S.yakuListTitle;
+      yhead.appendChild(ytitle);
+      var yprog = document.createElement("span");
+      yprog.className = "yaku-progress";
+      yprog.textContent = S.yakuProgress(yakuUnlockedCount(), yakuTotal());
+      yhead.appendChild(yprog);
+      ysec.appendChild(yhead);
+      var yul = document.createElement("ul");
+      yul.className = "yaku-list";
+      var YAKU_ORDER = [[1,5],[3,5],[3,8],[3,9],[3,10],[6,12],[8,9]];
+      YAKU_ORDER.forEach(function(pair){
+        var li = document.createElement("li");
+        var yp = document.createElement("span");
+        yp.className = "yp";
+        yp.textContent = monthLabel(pair[0]) + " × " + monthLabel(pair[1]);
+        var yn = document.createElement("span");
+        var unlocked = isYakuUnlocked(pair[0], pair[1]);
+        yn.className = unlocked ? "yn" : "yn locked";
+        yn.textContent = unlocked ? yakuNameFor(pair[0], pair[1]) : S.yakuLocked;
+        li.appendChild(yp);
+        li.appendChild(yn);
+        yul.appendChild(li);
+      });
+      ysec.appendChild(yul);
+      var ybtn = document.createElement("button");
+      ybtn.type = "button";
+      ybtn.className = "x-btn yaku-idea-btn";
+      ybtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"/></svg>';
+      var yspan = document.createElement("span");
+      yspan.textContent = S.yakuIdeaBtn;
+      ybtn.appendChild(yspan);
+      ybtn.addEventListener("click", function(){
+        initAudio();
+        sfxClick();
+        openXIntent(t().yakuIdeaText);
+      });
+      ysec.appendChild(ybtn);
+      $("howtoBody").appendChild(ysec);
+    })();
     $("howtoBackBtn").textContent = S.backTitle;
     $("changelogBtn").textContent = S.changelogBtn;
+    $("titleYakuIdeaBtn").textContent = S.yakuIdeaBtn;
     $("changelogTitle").innerHTML = S.changelogTitle;
     $("changelogBackBtn").textContent = S.backTitle;
     var clBody = $("changelogBody");
@@ -2181,6 +2738,7 @@
     $("captureCloseBtn").textContent = S.close;
     for (var m = 1; m <= 12; m++){
       if (oshiBtns[m]) oshiBtns[m].setAttribute("aria-label", S.oshiSelectAria(monthName(m)));
+      if (oshiBadges[m]) oshiBadges[m].setAttribute("aria-label", S.xProfileAria(monthName(m)));
       if (oshiLabels[m]) oshiLabels[m].textContent = monthLabel(m);
     }
     if (current){
@@ -2196,6 +2754,7 @@
     renderLap();
     renderStrip();
     renderStreak(false);
+    renderOshiTitles();
     renderHistory();
   }
   applyLang();
@@ -2224,12 +2783,20 @@
   $("howtoBtn").addEventListener("click", function(){
     initAudio();
     sfxClick();
+    /* rebuild the how-to body so the yaku collection (unlocked names
+       and the n/7 progress) reflects combos earned in the last game */
+    applyLang();
     showScreen(howtoScreen);
   });
   $("changelogBtn").addEventListener("click", function(){
     initAudio();
     sfxClick();
     showScreen(changelogScreen);
+  });
+  $("titleYakuIdeaBtn").addEventListener("click", function(){
+    initAudio();
+    sfxClick();
+    openXIntent(t().yakuIdeaText);
   });
   $("changelogBackBtn").addEventListener("click", function(){
     sfxClick();
