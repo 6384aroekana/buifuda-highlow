@@ -372,7 +372,7 @@
   #gameScreen.over .guess-row{ display:none; }
   #gameScreen.over .card-frame{ width:min(31vw, 16.8dvh, 210px); }
   #gameScreen.over .streak-num{ font-size:clamp(42px,12vw,60px); }
-  #gameScreen.over .over-oshi img{ width:min(12vw,46px); }
+  #gameScreen.over .over-info{ --over-side-w:min(12vw,46px); }
   #gameScreen.over .tap-hint{ margin-top:5px; }
   #gameScreen.over #gameCaptureBtn,
   #gameScreen.over #gameShareBtn{ margin-top:9px; padding-left:15px; padding-right:15px; }
@@ -447,28 +447,58 @@
      the card (taller than the three text lines) grows the block
      instead of spilling over the tap-hint line below. */
   .over-info{
+    /* ONE shared width for BOTH side pieces — the camera button on
+       the left and the oshi-card image on the right — and for the
+       two side columns themselves. Both pieces take this variable
+       as their width and the same 218/355 aspect ratio, and both
+       are top-aligned (align-self:start), so their top edges start
+       on the same line and, being the same width and aspect, their
+       bottom edges end on the same line too — in every state. The
+       game-over rule above shrinks this single variable, so both
+       sides shrink together and can never drift apart. */
+    --over-side-w:min(13.5vw, 52px);
     display:grid;
-    /* three columns: an empty spacer on the left the same width as the
+    /* three columns: the left column the same width as the
        oshi-card column on the right, so the text column between them
        sits at the true centre of the screen instead of being pushed
        left by the card */
-    grid-template-columns:calc(min(13.5vw, 52px) + 10px) minmax(0,1fr) calc(min(13.5vw, 52px) + 10px);
+    grid-template-columns:calc(var(--over-side-w) + 10px) minmax(0,1fr) calc(var(--over-side-w) + 10px);
     align-items:center; justify-items:center;
   }
   .over-info > #finalRecord,
   .over-info > #oshiTitleNote{ grid-column:2; min-width:0; }
   .over-oshi{
-    grid-column:3; grid-row:1 / span 2; margin-left:10px;
+    grid-column:3; grid-row:1 / span 2; margin-left:10px; align-self:start;
     display:none; flex-direction:column; align-items:center; gap:4px;
   }
   .over-oshi.show{ display:flex; }
   .over-oshi img{
-    width:min(13.5vw,52px); aspect-ratio:218/355; object-fit:cover; display:block;
+    width:var(--over-side-w); aspect-ratio:218/355; object-fit:cover; display:block;
     border-radius:6px; border:2px solid #ffd94d;
     box-shadow:0 0 14px 3px rgba(255,217,77,.55), 0 6px 14px rgba(0,0,0,.5); background:#fff;
   }
   .over-oshi .d-oshi-label{ font-size:11px; color:#ffd94d; letter-spacing:.14em; font-weight:700; text-shadow:0 1px 4px rgba(10,8,30,.95), 0 0 9px rgba(10,8,30,.7); }
   .detail-oshi .x-link{ margin-top:0; font-size:11px; }
+  /* camera button in the left column of .over-info, mirroring the
+     oshi card on the right: exactly the same size as the oshi card
+     image (same width, same 218/355 aspect) and top-aligned with it
+     (align-self:start on both sides), so the button's top and bottom
+     edges line up with the image's — the 推し札 label sits below the
+     image only. Dark plate with a gold frame and a gold camera icon.
+     Tapping it runs the same result capture as the 画面キャプチャ
+     button below (which stays in place). */
+  .over-cam{
+    grid-column:1; grid-row:1 / span 2; margin-right:10px; align-self:start;
+    display:none; align-items:center; justify-content:center;
+    width:var(--over-side-w); aspect-ratio:218/355; min-height:0; padding:0;
+    color:var(--gold);
+    background:rgba(15,20,40,.65);
+    border:2px solid #ffd94d; border-radius:6px;
+    box-shadow:0 0 14px 3px rgba(255,217,77,.35), 0 6px 14px rgba(0,0,0,.5);
+  }
+  .over-cam.show{ display:flex; }
+  .over-cam svg{ width:55%; height:55%; }
+  .over-cam:active{ transform:translateY(1px); }
 
   /* ---------- used-cards strip (deep indigo frame) ---------- */
   .used-strip{
@@ -847,6 +877,9 @@
     <div class="streak-label" id="streakLabel">連続記録</div>
     <div class="streak-num" id="streakNum">0<span class="unit">回</span></div>
     <div class="over-info">
+      <button class="over-cam" id="overCamBtn" aria-label="画面キャプチャ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      </button>
       <div class="final-record" id="finalRecord"></div>
       <div class="oshi-title-note" id="oshiTitleNote"></div>
       <div class="over-oshi" id="overOshi">
@@ -1409,7 +1442,7 @@
   var lapBadge = $("lapBadge"), stripLap = $("stripLap");
   var oshiTitleNote = $("oshiTitleNote");
   var yakuBanner = $("yakuBanner"), yakuTimer = null;
-  var overOshi = $("overOshi"), overOshiImg = $("overOshiImg");
+  var overOshi = $("overOshi"), overOshiImg = $("overOshiImg"), overCamBtn = $("overCamBtn");
 
   function currentPlayerName(){ return enteredName ? enteredName : t().guest; }
   var deck = [], current = null, next = null, oshi = null;
@@ -1950,6 +1983,7 @@
     oshiTitleNote.textContent = "";
     oshiTitleNote.className = "oshi-title-note";
     overOshi.classList.remove("show");
+    overCamBtn.classList.remove("show");
     gameCaptureBtn.classList.remove("show");
     gameShareBtn.classList.remove("show");
     hideYakuBanner();
@@ -2070,6 +2104,7 @@
         overOshiImg.src = MONTHS[oshi].img;
         overOshiImg.alt = t().oshiAlt + monthName(oshi);
         overOshi.classList.add("show");
+        overCamBtn.classList.add("show");
         gameCaptureBtn.classList.add("show");
         gameShareBtn.classList.add("show");
         busy = false;
@@ -2592,6 +2627,13 @@
 
   gameCaptureBtn.addEventListener("click", function(e){
     /* keep the game-over tap-to-title handler from firing */
+    e.stopPropagation();
+    initAudio();
+    sfxClick();
+    captureGameOver();
+  });
+  /* the camera button beside the final record does the same capture */
+  overCamBtn.addEventListener("click", function(e){
     e.stopPropagation();
     initAudio();
     sfxClick();
