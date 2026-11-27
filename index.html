@@ -522,6 +522,27 @@
   .cap-dl{ color:var(--gold); background:rgba(15,20,40,.65); border:1px solid var(--gold-soft); }
   .cap-close{ color:var(--ink); background:transparent; border:1px solid var(--line); }
 
+  /* ---------- history footer: compact buttons, more room for the list ---------- */
+  #historyScreen{ gap:8px; }
+  #historyScreen .sub-title{ margin-top:2px; }
+  .hist-btn-row{
+    display:flex; gap:8px; width:min(430px,96vw); flex:0 0 auto;
+  }
+  #historyScreen .hist-btn-row .capture-btn,
+  #historyScreen .hist-btn-row .clear-btn{
+    flex:0 0 calc(50% - 4px); width:calc(50% - 4px);
+    height:46px; min-height:46px; padding:0 6px;
+    font-size:13.5px; letter-spacing:.07em; border-radius:9px; white-space:nowrap;
+  }
+  #historyScreen #histCaptureBtn{ width:calc(50% - 4px); gap:6px; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  #historyScreen .hist-btn-row .capture-btn svg{ width:16px; height:16px; }
+  #historyScreen #histBackBtn{
+    width:min(430px,96vw); height:46px; min-height:46px; padding:0 12px;
+    font-size:14px; letter-spacing:.18em; flex:0 0 auto;
+  }
+  #historyScreen .clear-confirm{ width:min(430px,96vw); flex:0 0 auto; }
+  #historyScreen .version{ flex:0 0 auto; }
+
   /* history detail (replay of the final screen) */
   #detailScreen{ gap:1.2dvh; position:relative; }
   .detail-cards{ display:flex; align-items:flex-start; justify-content:center; gap:4.5vw; width:100%; }
@@ -595,7 +616,7 @@
     <button class="sub-btn" id="howtoBtn">遊び方</button>
   </div>
   <div class="title-meta">
-    <p class="version">ver 1.6</p>
+    <p class="version">ver 1.7</p>
     <button class="changelog-btn" id="changelogBtn">変更履歴</button>
   </div>
 </section>
@@ -681,11 +702,13 @@
     <button class="switch" id="timeToggle" role="switch" aria-checked="true" aria-label="プレイ時間の表示オン・オフ"></button>
   </div>
   <div class="hist-list" id="histList"></div>
-  <button class="capture-btn" id="histCaptureBtn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-    <span id="histCaptureLabel">画面キャプチャ</span>
-  </button>
-  <button class="clear-btn" id="histClearBtn">履歴クリア</button>
+  <div class="hist-btn-row">
+    <button class="capture-btn" id="histCaptureBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      <span id="histCaptureLabel">画面キャプチャ</span>
+    </button>
+    <button class="clear-btn" id="histClearBtn">履歴クリア</button>
+  </div>
   <div class="clear-confirm" id="clearConfirm" role="alertdialog" aria-label="履歴クリアの確認">
     <p id="clearConfirmText">プレイ履歴を全部消しますか？<br>消した履歴は元に戻せません。</p>
     <div class="clear-confirm-row">
@@ -694,7 +717,7 @@
     </div>
   </div>
   <button class="back-btn" id="histBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.6</p>
+  <p class="version">ver 1.7</p>
 </section>
 
 <!-- ================= HOWTO ================= -->
@@ -714,7 +737,7 @@
   <h2 class="sub-title" id="changelogTitle">変更<span class="accent">履歴</span></h2>
   <div class="howto-body changelog-body" id="changelogBody"></div>
   <button class="back-btn" id="changelogBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.6</p>
+  <p class="version">ver 1.7</p>
 </section>
 
 <!-- ================= HISTORY DETAIL ================= -->
@@ -831,6 +854,7 @@
       changelogBtn: "変更履歴",
       changelogTitle: '変更<span class="accent">履歴</span>',
       changelogItems: [
+        { v:"ver 1.7", text:"履歴画面のボタンを小さくして一覧を広げた" },
         { v:"ver 1.6", text:"タイトルロゴと背景を和風デザインに変更／タイトル画面に桜のアニメーションを追加／韓国語に対応" },
         { v:"ver 1.5", text:"高い／低いのボタンの位置を入れ替え" },
         { v:"ver 1.4", text:"変更履歴ボタンを追加" },
@@ -920,6 +944,7 @@
       changelogBtn: "Changelog",
       changelogTitle: 'Change<span class="accent">log</span>',
       changelogItems: [
+        { v:"ver 1.7", text:"Smaller buttons on the History screen, with more room for the list" },
         { v:"ver 1.6", text:"New Japanese-style title logo and background / Cherry blossoms fall on the title screen / Korean language added" },
         { v:"ver 1.5", text:"Swapped the High and Low buttons" },
         { v:"ver 1.4", text:"Added the Changelog button" },
@@ -1009,6 +1034,7 @@
       changelogBtn: "변경 이력",
       changelogTitle: '변경<span class="accent"> 이력</span>',
       changelogItems: [
+        { v:"ver 1.7", text:"기록 화면의 버튼을 작게 하고 목록 표시 영역을 넓혔다" },
         { v:"ver 1.6", text:"타이틀 로고와 배경을 일본풍 디자인으로 변경 / 타이틀 화면에 벚꽃 애니메이션 추가 / 한국어 지원 추가" },
         { v:"ver 1.5", text:"높음/낮음 버튼 위치 교체" },
         { v:"ver 1.4", text:"변경 이력 버튼 추가" },
@@ -1963,7 +1989,7 @@
       ctx.textAlign = "left";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.6", 72, H - 74);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.7", 72, H - 74);
       var ow = 92, ox = W - 72 - ow, oy = H - 96 - Math.round(ow * 355 / 218);
       drawCapCard(ctx, imgs[2], ox, oy, ow, null);
       ctx.fillStyle = "#ffd94d";
@@ -2037,7 +2063,7 @@
       ctx.textAlign = "center";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.6", W / 2, H - 58);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.7", W / 2, H - 58);
       showCapture(cv, "buifuda-history.png");
     }).catch(function(){});
   }
