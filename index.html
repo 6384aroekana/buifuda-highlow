@@ -415,6 +415,44 @@
   .howto-body p{ margin:0 0 10px; }
   .howto-body p:last-child{ margin-bottom:0; }
 
+  /* ---------- screen capture ---------- */
+  .capture-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 22px;
+    font-size:15px; font-weight:700; letter-spacing:.14em;
+    color:#241a05; background:linear-gradient(180deg,#e9c877,#b98c34);
+    border:1px solid #ffe9a8; border-radius:10px;
+    box-shadow:0 4px 14px rgba(0,0,0,.45);
+  }
+  .capture-btn svg{ width:19px; height:19px; flex:0 0 auto; }
+  .capture-btn:active{ transform:translateY(1px); }
+  .capture-btn:disabled{ opacity:.35; cursor:default; transform:none; box-shadow:none; }
+  #gameCaptureBtn{ display:none; margin:12px auto 0; }
+  #gameCaptureBtn.show{ display:inline-flex; }
+  #histCaptureBtn{ width:min(320px,86vw); }
+  .capture-overlay{
+    position:fixed; inset:0; z-index:80; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:rgba(5,7,16,.9);
+    padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  }
+  .capture-overlay.show{ display:flex; }
+  .capture-overlay img{
+    max-width:min(92vw,420px); max-height:60dvh; object-fit:contain;
+    border-radius:10px; border:1px solid var(--gold-soft);
+    box-shadow:0 10px 30px rgba(0,0,0,.6); background:#0d1120;
+  }
+  .capture-note{ margin:0; font-size:13.5px; color:var(--ink); letter-spacing:.06em; text-align:center; line-height:1.7; }
+  .capture-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .capture-actions button, .capture-actions a{
+    padding:11px 20px; border-radius:10px; min-height:44px;
+    font-size:14.5px; font-weight:700; letter-spacing:.12em; font-family:inherit;
+    display:inline-flex; align-items:center; text-decoration:none; cursor:pointer;
+  }
+  .cap-share{ color:#241a05; background:linear-gradient(180deg,#e9c877,#b98c34); border:1px solid #ffe9a8; }
+  .cap-dl{ color:var(--gold); background:rgba(15,20,40,.65); border:1px solid var(--gold-soft); }
+  .cap-close{ color:var(--ink); background:transparent; border:1px solid var(--line); }
+
   /* history detail (replay of the final screen) */
   #detailScreen{ gap:1.2dvh; position:relative; }
   .detail-cards{ display:flex; align-items:flex-start; justify-content:center; gap:4.5vw; width:100%; }
@@ -483,7 +521,7 @@
     <button class="sub-btn" id="historyBtn">プレイ履歴</button>
     <button class="sub-btn" id="howtoBtn">遊び方</button>
   </div>
-  <p class="version">ver 1.1</p>
+  <p class="version">ver 1.2</p>
 </section>
 
 <!-- ================= OSHI SELECT ================= -->
@@ -545,6 +583,10 @@
     <div class="streak-num" id="streakNum">0<span class="unit">回</span></div>
     <div class="final-record" id="finalRecord"></div>
     <div class="tap-hint" id="tapHint">画面をタップするとタイトルに戻ります</div>
+    <button class="capture-btn" id="gameCaptureBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+      画面キャプチャ
+    </button>
   </div>
 
   <div class="guess-row">
@@ -563,6 +605,10 @@
     <button class="switch" id="timeToggle" role="switch" aria-checked="true" aria-label="プレイ時間の表示オン・オフ"></button>
   </div>
   <div class="hist-list" id="histList"></div>
+  <button class="capture-btn" id="histCaptureBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+    画面キャプチャ
+  </button>
   <button class="clear-btn" id="histClearBtn">履歴クリア</button>
   <div class="clear-confirm" id="clearConfirm" role="alertdialog" aria-label="履歴クリアの確認">
     <p>プレイ履歴を全部消しますか？<br>消した履歴は元に戻せません。</p>
@@ -572,7 +618,7 @@
     </div>
   </div>
   <button class="back-btn" id="histBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.1</p>
+  <p class="version">ver 1.2</p>
 </section>
 
 <!-- ================= HOWTO ================= -->
@@ -621,6 +667,17 @@
   </div>
   <button class="back-btn" id="detailBackBtn">履歴に戻る</button>
 </section>
+
+<!-- ================= CAPTURE RESULT ================= -->
+<div class="capture-overlay" id="captureOverlay" role="dialog" aria-label="キャプチャ画像">
+  <img id="captureImg" alt="キャプチャした画像" />
+  <p class="capture-note">画像を長押しすると保存できます<br>（パソコンでは「ダウンロード」からも保存できます）</p>
+  <div class="capture-actions">
+    <button class="cap-share" id="captureShareBtn" style="display:none">共有する</button>
+    <a class="cap-dl" id="captureDl" download="buifuda-capture.png">ダウンロード</a>
+    <button class="cap-close" id="captureCloseBtn">閉じる</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -906,6 +963,8 @@
   function startGame(){
     streak = 0; gameOver = false; busy = false;
     lap = 1; histRecorded = false; usedSet = {};
+    lastResult = null;
+    gameCaptureBtn.classList.remove("show");
     gameScreen.classList.remove("over");
     tapHint.classList.remove("show");
     deck = buildDeck(0);
@@ -984,12 +1043,14 @@
         gameScreen.classList.add("over");
         if (!histRecorded){
           histRecorded = true;
-          history.unshift({
+          lastResult = {
             streak: streak, oshi: oshi, from: fromCard, to: revealed,
             lap: lap, time: new Date()
-          });
+          };
+          history.unshift(lastResult);
           saveHistory();
         }
+        gameCaptureBtn.classList.add("show");
         busy = false;
       }
     }, 580);
@@ -1170,6 +1231,7 @@
     clearConfirm.classList.remove("show");
     histClearBtn.style.display = "";
     histClearBtn.disabled = !history.length;
+    histCaptureBtn.disabled = !history.length;
     histList.innerHTML = "";
     if (!history.length){
       var empty = document.createElement("div");
@@ -1232,6 +1294,274 @@
     dd.style.display = showTime ? "" : "none";
     showScreen(detailScreen);
   }
+
+  /* ================= SCREEN CAPTURE =================
+     The capture image is composed on a canvas in the game's own style
+     (same colours, fonts and card art) rather than screenshotting the
+     DOM, so it renders identically everywhere — including iPhone,
+     where the result is shown full-screen for long-press saving. */
+  var gameCaptureBtn = $("gameCaptureBtn"), histCaptureBtn = $("histCaptureBtn");
+  var captureOverlay = $("captureOverlay"), captureImg = $("captureImg");
+  var captureDl = $("captureDl"), captureShareBtn = $("captureShareBtn");
+  var lastResult = null, captureBlobUrl = null, captureFile = null;
+  var SERIF = '"Hiragino Mincho ProN","Hiragino Mincho Pro","Yu Mincho","YuMincho","Noto Serif JP",serif';
+
+  function loadImg(src){
+    return new Promise(function(resolve, reject){
+      var im = new Image();
+      im.onload = function(){ resolve(im); };
+      im.onerror = function(){ reject(new Error("image load failed")); };
+      im.src = src;
+    });
+  }
+  function rrPath(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function capBg(ctx, W, H){
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#1d2542");
+    g.addColorStop(0.55, "#141a2e");
+    g.addColorStop(1, "#0d1120");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "rgba(217,169,74,.5)";
+    ctx.lineWidth = 3;
+    rrPath(ctx, 28, 28, W - 56, H - 56, 24);
+    ctx.stroke();
+  }
+  /* draw a card image with the game's black frame and optional month badge */
+  function drawCapCard(ctx, im, x, y, w, label){
+    var h = Math.round(w * 355 / 218);
+    ctx.save();
+    rrPath(ctx, x, y, w, h, 12);
+    ctx.clip();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(x, y, w, h);
+    ctx.drawImage(im, x, y, w, h);
+    ctx.restore();
+    ctx.strokeStyle = "#0a0a0a";
+    ctx.lineWidth = 3;
+    rrPath(ctx, x, y, w, h, 12);
+    ctx.stroke();
+    if (label){
+      ctx.font = "700 30px " + SERIF;
+      var tw = ctx.measureText(label).width;
+      ctx.fillStyle = "rgba(12,14,26,.88)";
+      rrPath(ctx, x + 10, y + 10, tw + 26, 48, 8);
+      ctx.fill();
+      ctx.strokeStyle = "#b98c34";
+      ctx.lineWidth = 2;
+      rrPath(ctx, x + 10, y + 10, tw + 26, 48, 8);
+      ctx.stroke();
+      ctx.fillStyle = "#d9a94a";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, x + 23, y + 35);
+    }
+    return h;
+  }
+  function showCapture(cv, filename){
+    captureDl.setAttribute("download", filename);
+    function done(url, blob){
+      if (captureBlobUrl && captureBlobUrl.indexOf("blob:") === 0) URL.revokeObjectURL(captureBlobUrl);
+      captureBlobUrl = url;
+      captureImg.src = url;
+      captureDl.href = url;
+      captureFile = null;
+      if (blob){
+        try { captureFile = new File([blob], filename, { type: "image/png" }); } catch(e){ captureFile = null; }
+      }
+      var canShare = !!(captureFile && navigator.share && navigator.canShare &&
+        navigator.canShare({ files: [captureFile] }));
+      captureShareBtn.style.display = canShare ? "" : "none";
+      captureOverlay.classList.add("show");
+    }
+    if (cv.toBlob){
+      cv.toBlob(function(blob){
+        if (blob) done(URL.createObjectURL(blob), blob);
+        else done(cv.toDataURL("image/png"), null);
+      }, "image/png");
+    } else {
+      done(cv.toDataURL("image/png"), null);
+    }
+  }
+
+  /* game-over result card: final pair of cards, streak, lap, oshi */
+  function captureGameOver(){
+    if (!lastResult) return;
+    var rec = lastResult;
+    Promise.all([
+      loadImg(MONTHS[rec.from].img),
+      loadImg(MONTHS[rec.to].img),
+      loadImg(MONTHS[rec.oshi].img)
+    ]).then(function(imgs){
+      var W = 1080, H = 1420;
+      var cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      var ctx = cv.getContext("2d");
+      capBg(ctx, W, H);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#f5efe0";
+      ctx.font = "700 60px " + SERIF;
+      ctx.fillText("ぶいふだ🎴 High & Low", W / 2, 118);
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "27px " + SERIF;
+      ctx.fillText("― 推しと一緒に、次の一枚を当てよう ―", W / 2, 182);
+      ctx.fillStyle = "#d9a94a";
+      ctx.font = "700 34px " + SERIF;
+      ctx.fillText(playerName + " さんの記録", W / 2, 252);
+
+      var cw = 300, gap = 120;
+      var x1 = (W - cw * 2 - gap) / 2, x2 = x1 + cw + gap, cy = 300;
+      var ch = drawCapCard(ctx, imgs[0], x1, cy, cw, MONTHS[rec.from].label);
+      drawCapCard(ctx, imgs[1], x2, cy, cw, MONTHS[rec.to].label);
+      ctx.fillStyle = "#d9a94a";
+      ctx.font = "700 54px " + SERIF;
+      ctx.fillText("▶", W / 2, cy + ch / 2);
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "26px " + SERIF;
+      ctx.fillText("今の札", x1 + cw / 2, cy + ch + 34);
+      ctx.fillText("次の札", x2 + cw / 2, cy + ch + 34);
+
+      var ry = cy + ch + 92;
+      ctx.fillStyle = "#ef7d78";
+      ctx.font = "700 42px " + SERIF;
+      ctx.fillText("はずれ… " + MONTHS[rec.to].label + " でした", W / 2, ry);
+
+      ctx.fillStyle = "#d9a94a";
+      ctx.font = "30px " + SERIF;
+      ctx.fillText("連 続 記 録", W / 2, ry + 78);
+      var numStr = String(rec.streak);
+      ctx.font = "700 140px " + SERIF;
+      var nw = ctx.measureText(numStr).width;
+      ctx.font = "700 58px " + SERIF;
+      var uw = ctx.measureText("回").width;
+      var sx = (W - nw - uw - 14) / 2;
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#f5efe0";
+      ctx.font = "700 140px " + SERIF;
+      ctx.fillText(numStr, sx, ry + 185);
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "700 58px " + SERIF;
+      ctx.fillText("回", sx + nw + 14, ry + 218);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "28px " + SERIF;
+      ctx.fillText(rec.lap + "周目で終了" + (showTime ? " ・ " + fmtTime(rec.time) : ""), W / 2, ry + 302);
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "26px " + SERIF;
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.2", 72, H - 74);
+      var ow = 92, ox = W - 72 - ow, oy = H - 96 - Math.round(ow * 355 / 218);
+      drawCapCard(ctx, imgs[2], ox, oy, ow, null);
+      ctx.fillStyle = "#ffd94d";
+      ctx.font = "700 24px " + SERIF;
+      ctx.textAlign = "center";
+      ctx.fillText("推し札", ox + ow / 2, H - 74);
+      showCapture(cv, "buifuda-result.png");
+    }).catch(function(){});
+  }
+
+  /* history card: player name + up to 10 most recent runs */
+  function captureHistory(){
+    if (!history.length) return;
+    var rows = Math.min(history.length, 10);
+    var rowH = 128, gap = 14, listTop = 236;
+    var extra = history.length > rows ? 56 : 0;
+    var W = 1080;
+    var H = listTop + rows * rowH + (rows - 1) * gap + extra + 118;
+    var loads = [];
+    for (var i = 0; i < rows; i++) loads.push(loadImg(MONTHS[history[i].oshi].img));
+    Promise.all(loads).then(function(imgs){
+      var cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      var ctx = cv.getContext("2d");
+      capBg(ctx, W, H);
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#f5efe0";
+      ctx.font = "700 56px " + SERIF;
+      ctx.fillText("プレイ履歴", W / 2, 104);
+      ctx.fillStyle = "#d9a94a";
+      ctx.font = "700 32px " + SERIF;
+      ctx.fillText(playerName + " さんの記録", W / 2, 172);
+      for (var r = 0; r < rows; r++){
+        var rec = history[r];
+        var y = listTop + r * (rowH + gap);
+        ctx.fillStyle = "#1a2242";
+        rrPath(ctx, 60, y, W - 120, rowH, 14);
+        ctx.fill();
+        ctx.strokeStyle = "#3d4870";
+        ctx.lineWidth = 2;
+        rrPath(ctx, 60, y, W - 120, rowH, 14);
+        ctx.stroke();
+        var tw = 62, th = Math.round(tw * 355 / 218), ty = y + (rowH - th) / 2;
+        ctx.save();
+        rrPath(ctx, 84, ty, tw, th, 5);
+        ctx.clip();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(84, ty, tw, th);
+        ctx.drawImage(imgs[r], 84, ty, tw, th);
+        ctx.restore();
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#f5efe0";
+        ctx.font = "700 40px " + SERIF;
+        ctx.fillText(rec.streak + " 回連続正解", 176, y + 42);
+        ctx.fillStyle = "#c9c2ab";
+        ctx.font = "26px " + SERIF;
+        ctx.fillText("推し札：" + MONTHS[rec.oshi].name + "／" + rec.lap + "周目で終了", 176, y + 92);
+        if (showTime){
+          ctx.textAlign = "right";
+          ctx.font = "26px " + SERIF;
+          ctx.fillText(fmtTime(rec.time), W - 92, y + 42);
+        }
+      }
+      if (extra){
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#c9c2ab";
+        ctx.font = "26px " + SERIF;
+        ctx.fillText("…ほか " + (history.length - rows) + " 件", W / 2, listTop + rows * rowH + (rows - 1) * gap + 34);
+      }
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#c9c2ab";
+      ctx.font = "26px " + SERIF;
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.2", W / 2, H - 58);
+      showCapture(cv, "buifuda-history.png");
+    }).catch(function(){});
+  }
+
+  gameCaptureBtn.addEventListener("click", function(e){
+    /* keep the game-over tap-to-title handler from firing */
+    e.stopPropagation();
+    initAudio();
+    sfxClick();
+    captureGameOver();
+  });
+  histCaptureBtn.addEventListener("click", function(){
+    if (!history.length) return;
+    sfxClick();
+    captureHistory();
+  });
+  $("captureCloseBtn").addEventListener("click", function(){
+    sfxClick();
+    captureOverlay.classList.remove("show");
+  });
+  captureOverlay.addEventListener("click", function(e){
+    if (e.target === captureOverlay) captureOverlay.classList.remove("show");
+  });
+  captureShareBtn.addEventListener("click", function(){
+    if (captureFile && navigator.share){
+      navigator.share({ files: [captureFile] }).catch(function(){});
+    }
+  });
 
   /* ================= EVENTS ================= */
   $("startBtn").addEventListener("click", function(){
