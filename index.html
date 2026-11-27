@@ -116,6 +116,18 @@
   }
   .sub-btn:active{ transform:translateY(1px); }
   .version{ margin:0; font-size:11.5px; color:var(--ink-dim); letter-spacing:.18em; opacity:.75; }
+  .title-meta{ display:flex; align-items:center; justify-content:center; gap:12px; }
+  .changelog-btn{
+    min-height:30px; padding:4px 14px;
+    font-size:11.5px; letter-spacing:.14em; font-weight:700;
+    color:var(--ink-dim); background:rgba(15,20,40,.55);
+    border:1px solid var(--line); border-radius:999px;
+  }
+  .changelog-btn:active{ transform:translateY(1px); color:var(--gold); border-color:var(--gold-soft); }
+  .cl-item{ margin-bottom:14px; }
+  .cl-item:last-child{ margin-bottom:0; }
+  .cl-ver{ color:var(--gold); font-weight:700; font-size:14.5px; letter-spacing:.08em; margin-bottom:2px; }
+  .changelog-body p{ margin:0; }
   .lang-toggle{
     display:flex; width:min(230px,68vw);
     border:1px solid var(--gold-soft); border-radius:999px; overflow:hidden;
@@ -540,7 +552,10 @@
     <button class="sub-btn" id="historyBtn">プレイ履歴</button>
     <button class="sub-btn" id="howtoBtn">遊び方</button>
   </div>
-  <p class="version">ver 1.3</p>
+  <div class="title-meta">
+    <p class="version">ver 1.4</p>
+    <button class="changelog-btn" id="changelogBtn">変更履歴</button>
+  </div>
 </section>
 
 <!-- ================= OSHI SELECT ================= -->
@@ -637,7 +652,7 @@
     </div>
   </div>
   <button class="back-btn" id="histBackBtn">タイトルに戻る</button>
-  <p class="version">ver 1.3</p>
+  <p class="version">ver 1.4</p>
 </section>
 
 <!-- ================= HOWTO ================= -->
@@ -650,6 +665,14 @@
     <p>スタートしたら最初に<b>推しの札</b>を1枚選んでね。推しの札が関係する予想を当てると<b>＋3回</b>＆特別な音が鳴ります。推しの札が出てきた時はキラキラ光るよ。</p>
   </div>
   <button class="back-btn" id="howtoBackBtn">タイトルに戻る</button>
+</section>
+
+<!-- ================= CHANGELOG ================= -->
+<section class="screen sub-screen" id="changelogScreen">
+  <h2 class="sub-title" id="changelogTitle">変更<span class="accent">履歴</span></h2>
+  <div class="howto-body changelog-body" id="changelogBody"></div>
+  <button class="back-btn" id="changelogBackBtn">タイトルに戻る</button>
+  <p class="version">ver 1.4</p>
 </section>
 
 <!-- ================= HISTORY DETAIL ================= -->
@@ -748,6 +771,15 @@
       start: "スタート",
       historyBtn: "プレイ履歴",
       howtoBtn: "遊び方",
+      changelogBtn: "変更履歴",
+      changelogTitle: '変更<span class="accent">履歴</span>',
+      changelogItems: [
+        { v:"ver 1.4", text:"変更履歴ボタンを追加" },
+        { v:"ver 1.3", text:"日本語／English切り替えを追加" },
+        { v:"ver 1.2", text:"履歴画面とゲーム終了画面に画面キャプチャボタンを追加／履歴画面の文字はみ出しを修正" },
+        { v:"ver 1.1", text:"プレイ履歴と遊び方の画面を追加／ゲーム画面に使用済み札の一覧を追加／1周クリア時のファンファーレと周回表示" },
+        { v:"ver 1.0", text:"初版" }
+      ],
       oshiTitle: '推しの<span class="accent">V</span>さんを選んでね',
       oshiSub: '推しの札で当てると <b>＋3回</b> ボーナス＆特別な音が鳴るよ<br>好きな絵札を1枚タップしてね',
       playerSuffix: " さん",
@@ -827,6 +859,15 @@
       start: "START",
       historyBtn: "History",
       howtoBtn: "How to Play",
+      changelogBtn: "Changelog",
+      changelogTitle: 'Change<span class="accent">log</span>',
+      changelogItems: [
+        { v:"ver 1.4", text:"Added the Changelog button" },
+        { v:"ver 1.3", text:"Added Japanese / English language switching" },
+        { v:"ver 1.2", text:"Added screen-capture buttons to the History screen and the game-over screen / Fixed text overflowing its frame on the History screen" },
+        { v:"ver 1.1", text:"Added the Play History and How to Play screens / Added the used-card strip to the game screen / Added a fanfare and lap counter for clearing a full lap" },
+        { v:"ver 1.0", text:"First release" }
+      ],
       oshiTitle: 'Choose your fave <span class="accent">V</span>',
       oshiSub: 'Guess right on a turn with your fave card for a <b>+3</b> bonus and a special chime!<br>Tap the picture card you love most',
       playerSuffix: "",
@@ -906,6 +947,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var titleScreen = $("titleScreen"), oshiScreen = $("oshiScreen"), gameScreen = $("gameScreen");
   var historyScreen = $("historyScreen"), howtoScreen = $("howtoScreen"), detailScreen = $("detailScreen");
+  var changelogScreen = $("changelogScreen");
   var nameInput = $("nameInput");
   var currentImg = $("currentImg"), currentBadge = $("currentBadge"), currentName = $("currentName");
   var currentOshiBadge = $("currentOshiBadge"), nextOshiBadge = $("nextOshiBadge");
@@ -1435,7 +1477,7 @@
     return (d.getMonth() + 1) + "/" + d.getDate() + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
   function showScreen(el){
-    var screens = [titleScreen, oshiScreen, gameScreen, historyScreen, howtoScreen, detailScreen];
+    var screens = [titleScreen, oshiScreen, gameScreen, historyScreen, howtoScreen, detailScreen, changelogScreen];
     for (var s = 0; s < screens.length; s++) screens[s].classList.remove("active");
     el.classList.add("active");
   }
@@ -1675,7 +1717,7 @@
       ctx.textAlign = "left";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.3", 72, H - 74);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.4", 72, H - 74);
       var ow = 92, ox = W - 72 - ow, oy = H - 96 - Math.round(ow * 355 / 218);
       drawCapCard(ctx, imgs[2], ox, oy, ow, null);
       ctx.fillStyle = "#ffd94d";
@@ -1749,7 +1791,7 @@
       ctx.textAlign = "center";
       ctx.fillStyle = "#c9c2ab";
       ctx.font = "26px " + SERIF;
-      ctx.fillText("ぶいふだ🎴High & Low　ver 1.3", W / 2, H - 58);
+      ctx.fillText("ぶいふだ🎴High & Low　ver 1.4", W / 2, H - 58);
       showCapture(cv, "buifuda-history.png");
     }).catch(function(){});
   }
@@ -1838,6 +1880,23 @@
     $("howtoTitle").innerHTML = S.howtoTitle;
     $("howtoBody").innerHTML = S.howtoParas.join("");
     $("howtoBackBtn").textContent = S.backTitle;
+    $("changelogBtn").textContent = S.changelogBtn;
+    $("changelogTitle").innerHTML = S.changelogTitle;
+    $("changelogBackBtn").textContent = S.backTitle;
+    var clBody = $("changelogBody");
+    clBody.innerHTML = "";
+    S.changelogItems.forEach(function(item){
+      var wrap = document.createElement("div");
+      wrap.className = "cl-item";
+      var ver = document.createElement("div");
+      ver.className = "cl-ver";
+      ver.textContent = item.v;
+      var p = document.createElement("p");
+      p.textContent = item.text;
+      wrap.appendChild(ver);
+      wrap.appendChild(p);
+      clBody.appendChild(wrap);
+    });
     $("detailTitle").innerHTML = S.detailTitle;
     $("detailOshiLabel").textContent = S.detailOshi;
     $("detailBackBtn").textContent = S.backHistory;
@@ -1893,6 +1952,16 @@
     initAudio();
     sfxClick();
     showScreen(howtoScreen);
+  });
+  $("changelogBtn").addEventListener("click", function(){
+    initAudio();
+    sfxClick();
+    showScreen(changelogScreen);
+  });
+  $("changelogBackBtn").addEventListener("click", function(){
+    sfxClick();
+    showScreen(titleScreen);
+    layoutFan();
   });
   $("histBackBtn").addEventListener("click", function(){
     sfxClick();
