@@ -503,12 +503,17 @@
   .oshi-start{ width:min(320px,86vw); }
   .oshi-start:disabled{ opacity:.38; cursor:default; box-shadow:none; }
   .oshi-start:disabled:active{ transform:none; }
+  /* month label at the card's bottom-left. Its width is capped
+     with a 30px reserve on the right so the pill — and the 「月」
+     glyph at its end — always stops clear of the X badge in the
+     bottom-right corner, at every card size. */
   .oshi-card .m-label{
     position:absolute; left:4px; bottom:4px;
+    max-width:calc(100% - 30px); overflow:hidden;
     background:rgba(12,14,26,.88); color:var(--gold);
     border:1px solid var(--gold-soft); border-radius:5px;
     font-size:clamp(10px,2.8vw,12.5px); font-weight:700;
-    padding:2px 6px; line-height:1.3; white-space:nowrap;
+    padding:2px 5px; line-height:1.3; white-space:nowrap;
   }
   /* each grid cell: the tappable card (with a small X badge on its
      bottom-right corner), then the title line below it */
@@ -518,13 +523,14 @@
   /* small round X badge overlaid on the card; opens the VTuber's X profile
      in a new tab without triggering the oshi selection */
   .oshi-x-badge{
-    position:absolute; right:4px; bottom:4px; z-index:2;
-    width:22px; height:22px; border-radius:50%;
+    position:absolute; right:3px; bottom:3px; z-index:2;
+    width:20px; height:20px; border-radius:50%;
     background:#000; border:1.5px solid rgba(255,255,255,.9);
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 2px 6px rgba(0,0,0,.6);
     -webkit-tap-highlight-color:transparent;
   }
+  .oshi-x-badge svg{ width:10px; height:10px; }
   .oshi-x-badge:active{ background:#2b2b2b; }
   /* gift badge on the card's top-right corner, shown only on the
      VTuber's birthday / debut anniversary itself: a gold present on
@@ -950,19 +956,23 @@
      win at their heights, and at any taller viewport nothing here
      applies and the layout is exactly as designed. */
   @media (max-height:700px){
-    /* oshi select — the reported bug: shrink the grid and type,
-       and give the description right padding so its first line
-       clears the sound button in the top-right corner */
-    #oshiScreen{ gap:8px; }
-    .oshi-title{ font-size:clamp(19px,5.6vw,24px); }
+    /* oshi select — the reported bug: the cards stay BIG (grid
+       ~89vw wide, one card ≈ 21% of the screen width, capped by
+       dvh so the column still fits); the height is taken back
+       from the heading, the description, the gaps, the count
+       line and the start button instead. The description also
+       gets right padding so its first line clears the sound
+       button in the top-right corner */
+    #oshiScreen{ gap:6px; }
+    .oshi-title{ font-size:clamp(19px,5.6vw,23px); }
     .oshi-sub{
       padding-right:56px;
-      font-size:clamp(11.5px,3.2vw,12.5px); line-height:1.55;
+      font-size:clamp(11.5px,3.2vw,12px); line-height:1.5;
     }
-    .oshi-grid{ width:min(92vw, 38dvh); gap:7px; }
-    .oshi-cell .oshi-title-line{ margin-top:3px; min-height:2.3em; }
-    .oshi-count{ font-size:clamp(12px,3.4vw,13px); }
-    .oshi-start{ padding:10px 12px; font-size:17.5px; }
+    .oshi-grid{ width:min(89vw, 50.5dvh); gap:6px; }
+    .oshi-cell .oshi-title-line{ margin-top:2px; min-height:1.5em; font-size:9px; }
+    .oshi-count{ font-size:clamp(12px,3.4vw,12.5px); }
+    .oshi-start{ padding:9px 12px; font-size:17px; }
     /* game screen: one gentle step between the base layout and
        the 640px squeeze below */
     #gameScreen{ gap:.6dvh; }
@@ -980,11 +990,11 @@
      grid and type step down once more so the start button keeps
      clear of the bottom edge */
   @media (max-height:600px){
-    #oshiScreen{ gap:6px; }
+    #oshiScreen{ gap:5px; }
     .oshi-title{ font-size:clamp(18px,5.2vw,22px); }
-    .oshi-sub{ line-height:1.5; }
-    .oshi-grid{ width:min(90vw, 35dvh); gap:6px; }
-    .oshi-cell .oshi-title-line{ min-height:2em; font-size:9px; margin-top:2px; }
+    .oshi-sub{ line-height:1.45; }
+    .oshi-grid{ width:min(89vw, 47dvh); gap:5px; }
+    .oshi-cell .oshi-title-line{ min-height:1.5em; font-size:9px; margin-top:2px; }
     .oshi-start{ padding:9px 12px; font-size:17px; }
   }
 
