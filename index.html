@@ -448,7 +448,18 @@
   #gameScreen.over .used-strip{ padding-top:5px; padding-bottom:4px; }
 
   /* ---------- oshi select screen ---------- */
-  #oshiScreen{ justify-content:center; gap:1.4dvh; text-align:center; }
+  /* The column is NOT centred with justify-content: with a fixed
+     100dvh screen, a centred column that grows taller than the
+     viewport overflows at BOTH ends, and the top overflow is
+     clipped away for good — on iPhone SE2 (667pt tall) the heading
+     was cut off at the top and the start button sank below the
+     fold. Instead the free space is absorbed by auto margins on
+     the first and last children: the block still sits centred when
+     everything fits, but when it doesn't, the margins collapse to
+     zero and the heading starts right below the top padding. */
+  #oshiScreen{ justify-content:flex-start; gap:1.4dvh; text-align:center; }
+  #oshiScreen .oshi-title{ margin-top:auto; }
+  #oshiScreen .oshi-start{ margin-bottom:auto; }
   .oshi-title{
     margin:0; font-size:clamp(21px,6.4vw,30px); font-weight:700; letter-spacing:.1em; color:var(--ink);
     text-shadow:0 1px 5px rgba(10,8,30,.95), 0 0 14px rgba(10,8,30,.6);
@@ -927,6 +938,55 @@
   .detail-oshi-cell .oshi-x-badge svg{ width:9px; height:9px; }
   .detail-oshi .d-oshi-label{ font-size:11px; color:#ffd94d; letter-spacing:.14em; font-weight:700; text-shadow:0 1px 4px rgba(10,8,30,.95), 0 0 9px rgba(10,8,30,.7); }
   #detailScreen .back-btn{ margin-top:auto; }
+
+  /* ---------- short-viewport compaction: every screen ----------
+     iPhone SE2-class viewports (667pt tall) sat in the gap between
+     the base layout and the max-height:640px squeezes below: on
+     the oshi select screen the column overflowed — heading clipped
+     at the top, description running under the fixed sound button,
+     start button half below the fold. These tiers bridge that gap
+     for all screens (smaller cards and type, tighter gaps); they
+     sit BEFORE the 640px/560px blocks so those tighter rules still
+     win at their heights, and at any taller viewport nothing here
+     applies and the layout is exactly as designed. */
+  @media (max-height:700px){
+    /* oshi select — the reported bug: shrink the grid and type,
+       and give the description right padding so its first line
+       clears the sound button in the top-right corner */
+    #oshiScreen{ gap:8px; }
+    .oshi-title{ font-size:clamp(19px,5.6vw,24px); }
+    .oshi-sub{
+      padding-right:56px;
+      font-size:clamp(11.5px,3.2vw,12.5px); line-height:1.55;
+    }
+    .oshi-grid{ width:min(92vw, 38dvh); gap:7px; }
+    .oshi-cell .oshi-title-line{ margin-top:3px; min-height:2.3em; }
+    .oshi-count{ font-size:clamp(12px,3.4vw,13px); }
+    .oshi-start{ padding:10px 12px; font-size:17.5px; }
+    /* game screen: one gentle step between the base layout and
+       the 640px squeeze below */
+    #gameScreen{ gap:.6dvh; }
+    #gameScreen .card-frame{ width:min(32.5vw, 15.8dvh, 200px); }
+    #gameScreen.over .card-frame{ width:min(21vw, 11.3dvh, 200px); }
+    /* history detail: slightly smaller replay cards */
+    .detail-frame{ width:min(34vw, 20.5dvh, 210px); }
+    /* sub screens (history / how-to / changelog): tighter spacing */
+    .sub-screen{ gap:9px; }
+    .sub-title{ font-size:clamp(19px,5.8vw,25px); }
+    /* title screen: just the gaps — the logo padding stays as is */
+    #titleScreen{ gap:.8dvh; }
+  }
+  /* shorter still (browser chrome visible, split view): the oshi
+     grid and type step down once more so the start button keeps
+     clear of the bottom edge */
+  @media (max-height:600px){
+    #oshiScreen{ gap:6px; }
+    .oshi-title{ font-size:clamp(18px,5.2vw,22px); }
+    .oshi-sub{ line-height:1.5; }
+    .oshi-grid{ width:min(90vw, 35dvh); gap:6px; }
+    .oshi-cell .oshi-title-line{ min-height:2em; font-size:9px; margin-top:2px; }
+    .oshi-start{ padding:9px 12px; font-size:17px; }
+  }
 
   @media (max-height:640px){
     .streak-num{ font-size:clamp(38px,11.5vw,52px); }
