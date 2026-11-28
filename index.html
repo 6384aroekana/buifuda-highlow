@@ -3370,16 +3370,28 @@
         }
       }
       /* fixed 1080×1350 (4:5) canvas, whatever the title count:
-         extra title lines are squeezed inside this height by
-         using a smaller font and tighter line spacing (and a
-         slightly earlier start / smaller bottom tag), never by
-         growing the canvas — 1 line keeps the original metrics */
+         extra title lines are fitted inside this height, never by
+         growing the canvas. With 2–3 lines the whole result block
+         shifts up and tightens (smaller streak number, final
+         record and title fonts) so the final-record line, every
+         title line and the bottom tag keep clear gaps between
+         them — 0–1 lines keep the original metrics */
       var titleCount = capTitleLines.length;
-      var titleBaseSize = titleCount <= 1 ? 38 : titleCount === 2 ? 32 : 27;
-      var titleLineH = titleCount <= 1 ? 48 : titleCount === 2 ? 37 : 30;
-      var titleStartY = titleCount <= 1 ? 1268 : titleCount === 2 ? 1256 : 1244;
-      var capTagY = titleCount <= 1 ? 1316 : titleCount === 2 ? 1330 : 1332;
-      var capTagSize = titleCount <= 1 ? 40 : titleCount === 2 ? 38 : 34;
+      var titleBaseSize = titleCount <= 1 ? 38 : titleCount === 2 ? 31 : 26;
+      var titleLineH = titleCount <= 1 ? 48 : titleCount === 2 ? 40 : 34;
+      var titleStartY = titleCount <= 1 ? 1268 : titleCount === 2 ? 1254 : 1232;
+      var capTagY = titleCount <= 1 ? 1316 : titleCount === 2 ? 1334 : 1330;
+      var capTagSize = titleCount <= 1 ? 40 : titleCount === 2 ? 32 : 30;
+      /* vertical metrics of the result block above the titles */
+      var resLay = { feedbackY: 986, streakLabelY: 1029, numSize: 150, numY: 1123,
+                     unitSize: 72, unitY: 1155, finalSize: 44, finalY: 1220 };
+      if (titleCount === 2){
+        resLay = { feedbackY: 986, streakLabelY: 1029, numSize: 150, numY: 1106,
+                   unitSize: 72, unitY: 1138, finalSize: 42, finalY: 1204 };
+      } else if (titleCount >= 3){
+        resLay = { feedbackY: 978, streakLabelY: 1020, numSize: 132, numY: 1096,
+                   unitSize: 64, unitY: 1126, finalSize: 40, finalY: 1190 };
+      }
       var W = 1080, H = 1350;
       var cv = document.createElement("canvas");
       cv.width = W; cv.height = H;
@@ -3645,37 +3657,37 @@
       ctx.fillStyle = "#ff9d97";
       ctx.font = "700 54px " + SERIF;
       spaced("4px");
-      ctx.fillText(S.feedbackWrong(monthLabel(rec.to)), W / 2, 986);
+      ctx.fillText(S.feedbackWrong(monthLabel(rec.to)), W / 2, resLay.feedbackY);
       spaced("0px");
       ctx.fillStyle = "#d9a94a";
       ctx.font = "36px " + SERIF;
       spaced("16px");
-      ctx.fillText(S.streakLabel, W / 2, 1029);
+      ctx.fillText(S.streakLabel, W / 2, resLay.streakLabelY);
       spaced("0px");
       var numStr = String(rec.streak);
-      ctx.font = "700 150px " + SERIF;
+      ctx.font = "700 " + resLay.numSize + "px " + SERIF;
       var nw = ctx.measureText(numStr).width;
       var unit = S.streakUnit;
-      ctx.font = "700 72px " + SERIF;
+      ctx.font = "700 " + resLay.unitSize + "px " + SERIF;
       var uw3 = unit ? ctx.measureText(unit).width : 0;
       var sx = (W - nw - (unit ? uw3 + 10 : 0)) / 2;
       ctx.textAlign = "left";
       ctx.fillStyle = "#f5efe0";
-      ctx.font = "700 150px " + SERIF;
+      ctx.font = "700 " + resLay.numSize + "px " + SERIF;
       ctx.shadowBlur = 14;
-      ctx.fillText(numStr, sx, 1123);
+      ctx.fillText(numStr, sx, resLay.numY);
       if (unit){
         ctx.fillStyle = "#ddd6c0";
-        ctx.font = "700 72px " + SERIF;
-        ctx.fillText(unit, sx + nw + 10, 1155);
+        ctx.font = "700 " + resLay.unitSize + "px " + SERIF;
+        ctx.fillText(unit, sx + nw + 10, resLay.unitY);
       }
       ctx.shadowBlur = 0;
       ctx.textAlign = "center";
       ctx.shadowColor = "rgba(10,8,30,.9)";
       ctx.shadowBlur = 10;
       ctx.fillStyle = "#ff9d97";
-      ctx.font = "44px " + SERIF;
-      ctx.fillText(S.finalRecord(rec.streak), W / 2, 1220);
+      ctx.font = resLay.finalSize + "px " + SERIF;
+      ctx.fillText(S.finalRecord(rec.streak), W / 2, resLay.finalY);
       ctx.shadowBlur = 0;
       /* the title lines, one per fave, each on its own line,
          month-prefixed as on screen; with more than one line the
