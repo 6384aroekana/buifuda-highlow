@@ -579,7 +579,11 @@
     font-size:9.5px; line-height:1.35; letter-spacing:.02em;
     color:var(--ink-dim); text-align:center;
   }
-  .oshi-cell .ot-name{ display:block; color:#ffd94d; font-weight:700; font-size:10px; }
+  /* the title name is always ONE line: it never wraps mid-word
+     (「初見リスナ／ー」); when a long title is wider than its card
+     cell, JS (fitOshiTitleNames) steps its font size down until
+     the whole name fits. The play count stays on the line below. */
+  .oshi-cell .ot-name{ display:block; color:#ffd94d; font-weight:700; font-size:10px; white-space:nowrap; }
   .oshi-cell .ot-count{ display:block; }
   /* small link to the VTuber's X profile, shown under a card */
   .x-link{
@@ -2451,7 +2455,39 @@
       cs.textContent = t().titleCount(c);
       el.appendChild(cs);
     }
+    fitOshiTitleNames();
   }
+
+  /* shrink each title name's font size until it fits its card
+     cell on a single line (the CSS keeps it nowrap, so a name
+     that is too wide would otherwise overflow the cell). Long
+     titles — 殿堂入りリスナー, 伝説のリスナー, and the English /
+     Korean equivalents — step down in half-pixel increments;
+     short ones keep the designed size. Runs after every title
+     render; while the oshi screen is hidden the cells measure
+     zero width and fitting is skipped, then re-run when the
+     screen is shown and on window resize. */
+  function fitOshiTitleNames(){
+    for (var m = 1; m <= 12; m++){
+      var el = oshiTitleLines[m];
+      if (!el) continue;
+      var ns = el.querySelector(".ot-name");
+      if (!ns) continue;
+      ns.style.fontSize = "";
+      if (!ns.clientWidth) continue;
+      var size = parseFloat(window.getComputedStyle(ns).fontSize) || 10;
+      var min = 5;
+      while (ns.scrollWidth > ns.clientWidth && size > min){
+        size = Math.max(min, size - 0.5);
+        ns.style.fontSize = size + "px";
+      }
+    }
+  }
+  var oshiFitTimer = null;
+  window.addEventListener("resize", function(){
+    if (oshiFitTimer) clearTimeout(oshiFitTimer);
+    oshiFitTimer = setTimeout(fitOshiTitleNames, 120);
+  });
 
   /* build the used-cards strip: 12 mini cards in the indigo frame.
      A card that has already appeared turns gray; the current card glows gold. */
@@ -3986,6 +4022,9 @@
     playerNameEl.textContent = currentPlayerName();
     titleScreen.classList.remove("active");
     oshiScreen.classList.add("active");
+    /* the title names could not be measured while this screen
+       was hidden — fit them now that the cells have real widths */
+    requestAnimationFrame(fitOshiTitleNames);
   });
   nameInput.addEventListener("keydown", function(e){
     if (e.key === "Enter"){ e.preventDefault(); $("startBtn").click(); }
