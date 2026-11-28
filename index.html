@@ -338,6 +338,10 @@
   }
   .oshi-title-note.show{ display:block; }
   .oshi-title-note.got{ color:#ffd94d; font-weight:700; }
+  /* one fave's title per line: each line is its own block and never
+     wraps mid-phrase; a line too wide for the centre column is
+     stepped down in size by JS (fitTitleNoteLines) instead */
+  .oshi-title-note .ot-line{ display:block; white-space:nowrap; }
 
   /* buttons */
   .guess-row{ display:flex; gap:14px; width:min(420px,94vw); }
@@ -454,7 +458,7 @@
   }
   #gameScreen.over .oshi-title-note{
     font-size:clamp(10px,2.9vw,11.5px); letter-spacing:.02em;
-    line-height:1.35; margin-top:3px;
+    line-height:1.3; margin-top:3px;
   }
   #gameScreen.over .over-oshi{ gap:3px; }
   #gameScreen.over .over-oshi .d-oshi-label{ font-size:10px; }
@@ -1608,10 +1612,10 @@
       capOshi: "推し札",
       titles: ["初見リスナー", "常連さん", "古参リスナー", "ガチ恋勢", "最古参", "生涯推し", "殿堂入りリスナー", "伝説のリスナー", "生きる伝説", "神推し"],
       titleCount: function(n){ return n + "回"; },
-      titleStatus: function(name, n){ return "推し称号：" + name + "（" + n + "回）"; },
-      titleGot: function(name){ return "称号ゲット：" + name; },
-      capTitle: function(name, n){ return "称号：" + name + "（" + n + "回）"; },
-      capTitleSuffix: function(name){ return "／称号：" + name; }
+      titleStatus: function(m, name, n){ return monthLabel(m) + " 推し称号：" + name + "（" + n + "回）"; },
+      titleGot: function(m, name){ return monthLabel(m) + " 称号ゲット：" + name; },
+      capTitle: function(m, name, n){ return monthLabel(m) + " 称号：" + name + "（" + n + "回）"; },
+      capTitleSuffix: function(m, name){ return "／" + monthLabel(m) + " 称号：" + name; }
     },
     en: {
       guest: "Guest",
@@ -1753,10 +1757,10 @@
       capOshi: "Fave",
       titles: ["First-Time Viewer", "Regular", "Long-Time Fan", "Devoted Fan", "OG Fan", "Lifelong Fan", "Hall of Fame Listener", "Legendary Listener", "Living Legend", "God-tier Oshi"],
       titleCount: function(n){ return n + (n === 1 ? " play" : " plays"); },
-      titleStatus: function(name, n){ return "Fave title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
-      titleGot: function(name){ return "New title earned: " + name; },
-      capTitle: function(name, n){ return "Title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
-      capTitleSuffix: function(name){ return " / Title: " + name; }
+      titleStatus: function(m, name, n){ return monthLabel(m) + " Fave title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
+      titleGot: function(m, name){ return monthLabel(m) + " New title earned: " + name; },
+      capTitle: function(m, name, n){ return monthLabel(m) + " Title: " + name + " (" + n + (n === 1 ? " play" : " plays") + ")"; },
+      capTitleSuffix: function(m, name){ return " / " + monthLabel(m) + " Title: " + name; }
     },
     ko: {
       guest: "게스트",
@@ -1898,10 +1902,10 @@
       capOshi: "최애 패",
       titles: ["첫 방문 시청자", "단골 시청자", "고참 시청자", "찐팬", "최고참", "평생 최애", "명예의 전당 리스너", "전설의 리스너", "살아있는 전설", "신급 최애"],
       titleCount: function(n){ return n + "회"; },
-      titleStatus: function(name, n){ return "최애 칭호: " + name + " (" + n + "회)"; },
-      titleGot: function(name){ return "칭호 획득: " + name; },
-      capTitle: function(name, n){ return "칭호: " + name + " (" + n + "회)"; },
-      capTitleSuffix: function(name){ return " / 칭호: " + name; }
+      titleStatus: function(m, name, n){ return monthLabel(m) + " 최애 칭호: " + name + " (" + n + "회)"; },
+      titleGot: function(m, name){ return monthLabel(m) + " 칭호 획득: " + name; },
+      capTitle: function(m, name, n){ return monthLabel(m) + " 칭호: " + name + " (" + n + "회)"; },
+      capTitleSuffix: function(m, name){ return " / " + monthLabel(m) + " 칭호: " + name; }
     }
   };
   function t(){ return STRINGS[LANG]; }
@@ -2490,8 +2494,42 @@
   var oshiFitTimer = null;
   window.addEventListener("resize", function(){
     if (oshiFitTimer) clearTimeout(oshiFitTimer);
-    oshiFitTimer = setTimeout(fitOshiTitleNames, 120);
+    oshiFitTimer = setTimeout(function(){ fitOshiTitleNames(); fitTitleNoteLines(); }, 120);
   });
+
+  /* game-over title note: one line per fave, each line prefixed
+     with that fave's month so it is clear whose title it is. The
+     lines are separate blocks — never joined with "／" and never
+     wrapped mid-phrase; a line wider than the centre column is
+     stepped down in size by fitTitleNoteLines, the same treatment
+     as the oshi-select title names. The plain-text lines are also
+     kept on lastResult (titleLines / titleText) so the result
+     capture image draws exactly what the screen showed. */
+  function renderTitleNote(lines, got){
+    oshiTitleNote.innerHTML = "";
+    for (var li = 0; li < lines.length; li++){
+      var ld = document.createElement("div");
+      ld.className = "ot-line";
+      ld.textContent = lines[li];
+      oshiTitleNote.appendChild(ld);
+    }
+    oshiTitleNote.className = lines.length ? ("oshi-title-note show" + (got ? " got" : "")) : "oshi-title-note";
+    fitTitleNoteLines();
+  }
+  function fitTitleNoteLines(){
+    var lines = oshiTitleNote.querySelectorAll(".ot-line");
+    for (var li2 = 0; li2 < lines.length; li2++){
+      var el2 = lines[li2];
+      el2.style.fontSize = "";
+      if (!el2.clientWidth) continue;
+      var size2 = parseFloat(window.getComputedStyle(el2).fontSize) || 11;
+      var min2 = 7;
+      while (el2.scrollWidth > el2.clientWidth && size2 > min2){
+        size2 = Math.max(min2, size2 - 0.5);
+        el2.style.fontSize = size2 + "px";
+      }
+    }
+  }
 
   /* build the used-cards strip: 12 mini cards in the indigo frame.
      A card that has already appeared turns gray; the current card glows gold. */
@@ -2873,10 +2911,10 @@
             var prevTitleIdx = titleIndexFor(oshiCounts[om4] || 0);
             oshiCounts[om4] = (oshiCounts[om4] || 0) + 1;
             var nowTitleIdx = titleIndexFor(oshiCounts[om4]);
-            if (nowTitleIdx > prevTitleIdx) gotTitles.push(t().titles[nowTitleIdx]);
+            if (nowTitleIdx > prevTitleIdx) gotTitles.push({ m: om4, name: t().titles[nowTitleIdx] });
           }
           saveOshiCounts();
-          newTitleName = gotTitles.length ? gotTitles.join(" ／ ") : null;
+          newTitleName = gotTitles.length ? gotTitles.map(function(g){ return g.name; }).join(" ／ ") : null;
           lastResult = {
             streak: streak, oshis: oshiList.slice(), from: fromCard, to: revealed,
             lap: lap, time: new Date(),
@@ -2887,23 +2925,23 @@
           history.unshift(lastResult);
           saveHistory();
           renderOshiTitles();
-          /* the title line under the final record: a "title got"
-             announcement if any fave crossed a tier this game,
+          /* the title lines under the final record: one line per
+             fave, each prefixed with that fave's month — a "title
+             got" announcement if any fave crossed a tier this game,
              otherwise the current title of each fave that has one */
+          var noteLines = [];
           if (gotTitles.length){
-            oshiTitleNote.textContent = gotTitles.map(function(nm){ return t().titleGot(nm); }).join(" ／ ");
-            oshiTitleNote.className = "oshi-title-note show got";
+            noteLines = gotTitles.map(function(g){ return t().titleGot(g.m, g.name); });
           } else {
-            var statusLines = [];
             for (var oi4 = 0; oi4 < oshiList.length; oi4++){
               var tnm2 = titleNameFor(oshiCounts[oshiList[oi4]] || 0);
-              if (tnm2) statusLines.push(t().titleStatus(tnm2, oshiCounts[oshiList[oi4]] || 0));
+              if (tnm2) noteLines.push(t().titleStatus(oshiList[oi4], tnm2, oshiCounts[oshiList[oi4]] || 0));
             }
-            oshiTitleNote.textContent = statusLines.join(" ／ ");
-            oshiTitleNote.className = statusLines.length ? "oshi-title-note show" : "oshi-title-note";
           }
-          /* keep the exact title line for the result capture image */
-          lastResult.titleText = oshiTitleNote.textContent;
+          renderTitleNote(noteLines, gotTitles.length > 0);
+          /* keep the exact title lines for the result capture image */
+          lastResult.titleLines = noteLines.slice();
+          lastResult.titleText = noteLines.join("\n");
           lastResult.titleGot = gotTitles.length > 0;
         }
         for (var oi5 = 0; oi5 < 3; oi5++){
@@ -3283,11 +3321,15 @@
      name, lap badge, personal best), the two big cards with their
      names, the twelve-card strip (used cards grayed, the field card
      glowing gold), the "はずれ…" line, the big streak number, the
-     final record, the oshi title line, the three oshi cards in a
+     final record, the oshi title lines (one per fave, each prefixed
+     with its month), the three oshi cards in a
      row at the right
-     and a "#ぶいふだ" tag along the bottom — in a 4:5 ratio
-     (1080×1350), short enough that X shows the whole image in the
-     timeline without cropping. The on-screen "tap to return" hint
+     and a "#ぶいふだ" tag along the bottom — always in a fixed
+     4:5 ratio (1080×1350), however many title lines there are:
+     the canvas never grows, and extra title lines are fitted
+     inside the same height by shrinking their font size and
+     line spacing instead; short enough that X shows
+     the whole image in the timeline without cropping. The on-screen "tap to return" hint
      is NOT drawn here; the tag takes its place. Only the on-screen
      controls are left out: the sound button, the camera button
      beside the record, and the capture / share buttons.
@@ -3301,6 +3343,43 @@
       var cardImgs = [null];
       for (var i = 1; i <= 12; i++) cardImgs.push(imgs[i]);
       var S = t();
+      /* the title lines exactly as the game-over screen showed
+         them (one per fave, month-prefixed); for a record shared
+         later from the history, rebuild one line per fave from the
+         plays counted up to and including that run. Records saved
+         by older builds hold a single " ／ "-joined line: split it
+         back into lines so it at least breaks cleanly. */
+      var capTitleLines = [];
+      if (rec.titleLines && rec.titleLines.length){
+        capTitleLines = rec.titleLines.slice();
+      } else if (rec.titleText){
+        var tp = rec.titleText.split("\n");
+        for (var tpi = 0; tpi < tp.length; tpi++){
+          var tpp = tp[tpi].split(" ／ ");
+          for (var tpj = 0; tpj < tpp.length; tpj++){ if (tpp[tpj]) capTitleLines.push(tpp[tpj]); }
+        }
+      } else {
+        var recIdx = history.indexOf(rec);
+        for (var oi6 = 0; oi6 < rec.oshis.length; oi6++){
+          var playsThen = 0;
+          for (var j = recIdx >= 0 ? recIdx : 0; j < history.length; j++){
+            if (history[j].oshis.indexOf(rec.oshis[oi6]) >= 0) playsThen++;
+          }
+          var tnCap = titleNameFor(playsThen);
+          if (tnCap) capTitleLines.push(S.titleStatus(rec.oshis[oi6], tnCap, playsThen));
+        }
+      }
+      /* fixed 1080×1350 (4:5) canvas, whatever the title count:
+         extra title lines are squeezed inside this height by
+         using a smaller font and tighter line spacing (and a
+         slightly earlier start / smaller bottom tag), never by
+         growing the canvas — 1 line keeps the original metrics */
+      var titleCount = capTitleLines.length;
+      var titleBaseSize = titleCount <= 1 ? 38 : titleCount === 2 ? 32 : 27;
+      var titleLineH = titleCount <= 1 ? 48 : titleCount === 2 ? 37 : 30;
+      var titleStartY = titleCount <= 1 ? 1268 : titleCount === 2 ? 1256 : 1244;
+      var capTagY = titleCount <= 1 ? 1316 : titleCount === 2 ? 1330 : 1332;
+      var capTagSize = titleCount <= 1 ? 40 : titleCount === 2 ? 38 : 34;
       var W = 1080, H = 1350;
       var cv = document.createElement("canvas");
       cv.width = W; cv.height = H;
@@ -3598,36 +3677,24 @@
       ctx.font = "44px " + SERIF;
       ctx.fillText(S.finalRecord(rec.streak), W / 2, 1220);
       ctx.shadowBlur = 0;
-      /* the title line exactly as the game-over screen showed it;
-         for a record shared later from the history, rebuild it from
-         the plays counted up to and including that run */
-      var titleLine = rec.titleText || "";
-      if (!titleLine){
-        /* the best title among the run's faves, from the plays
-           counted up to and including that run */
-        var recIdx = history.indexOf(rec);
-        var bestTn = null, bestTi = -1, bestPlays = 0;
-        for (var oi6 = 0; oi6 < rec.oshis.length; oi6++){
-          var playsThen = 0;
-          for (var j = recIdx >= 0 ? recIdx : 0; j < history.length; j++){
-            if (history[j].oshis.indexOf(rec.oshis[oi6]) >= 0) playsThen++;
-          }
-          var ti2 = titleIndexFor(playsThen);
-          if (ti2 > bestTi){ bestTi = ti2; bestTn = titleNameFor(playsThen); bestPlays = playsThen; }
-        }
-        if (bestTn) titleLine = S.titleStatus(bestTn, bestPlays);
-      }
-      if (titleLine){
+      /* the title lines, one per fave, each on its own line,
+         month-prefixed as on screen; with more than one line the
+         font and line spacing shrink (titleBaseSize / titleLineH /
+         titleStartY above) so every line still fits inside the
+         fixed 1350 height above the bottom tag */
+      if (capTitleLines.length){
         ctx.fillStyle = rec.titleGot ? "#ffd94d" : "#e2dbc6";
-        var titleSize = 38;
-        ctx.font = (rec.titleGot ? "700 " : "") + titleSize + "px " + SERIF;
-        while (ctx.measureText(titleLine).width > W - 90 && titleSize > 22){
-          titleSize -= 2;
-          ctx.font = (rec.titleGot ? "700 " : "") + titleSize + "px " + SERIF;
-        }
         ctx.shadowColor = "rgba(10,8,30,.9)";
         ctx.shadowBlur = 8;
-        ctx.fillText(titleLine, W / 2, 1268);
+        for (var tli = 0; tli < capTitleLines.length; tli++){
+          var titleSize = titleBaseSize;
+          ctx.font = (rec.titleGot ? "700 " : "") + titleSize + "px " + SERIF;
+          while (ctx.measureText(capTitleLines[tli]).width > W - 90 && titleSize > 20){
+            titleSize -= 2;
+            ctx.font = (rec.titleGot ? "700 " : "") + titleSize + "px " + SERIF;
+          }
+          ctx.fillText(capTitleLines[tli], W / 2, titleStartY + tli * titleLineH);
+        }
         ctx.shadowBlur = 0;
       }
 
@@ -3666,11 +3733,11 @@
          tap hint sits (the hint itself is not part of the image) ---- */
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffd94d";
-      ctx.font = "700 40px " + SERIF;
+      ctx.font = "700 " + capTagSize + "px " + SERIF;
       ctx.shadowColor = "rgba(10,8,30,.9)";
       ctx.shadowBlur = 8;
       spaced("2px");
-      ctx.fillText("#ぶいふだ", W / 2, 1316);
+      ctx.fillText("#ぶいふだ", W / 2, capTagY);
       spaced("0px");
       ctx.shadowBlur = 0;
       return cv;
@@ -3745,16 +3812,17 @@
         ctx.fillText(rec.streak + t().histStreakUnit, 200, y + 42);
         /* meta line: the run's fave cards + lap, plus the best
            title held among them as of this run (plays with each
-           card up to and including it); the font shrinks a step or
-           two if the line would overflow */
-        var rowTitle = null, rowTi = -1;
+           card up to and including it), prefixed with that title's
+           month so it is clear whose title it is; the font shrinks
+           a step or two if the line would overflow */
+        var rowTitle = null, rowTi = -1, rowTm = null;
         for (var oi8 = 0; oi8 < rec.oshis.length; oi8++){
           var playsThen = 0;
           for (var j = r; j < history.length; j++){ if (history[j].oshis.indexOf(rec.oshis[oi8]) >= 0) playsThen++; }
           var ti3 = titleIndexFor(playsThen);
-          if (ti3 > rowTi){ rowTi = ti3; rowTitle = titleNameFor(playsThen); }
+          if (ti3 > rowTi){ rowTi = ti3; rowTitle = titleNameFor(playsThen); rowTm = rec.oshis[oi8]; }
         }
-        var metaStr = t().histMeta(oshiNamesJoined(rec.oshis), rec.lap) + (rowTitle ? t().capTitleSuffix(rowTitle) : "");
+        var metaStr = t().histMeta(oshiNamesJoined(rec.oshis), rec.lap) + (rowTitle ? t().capTitleSuffix(rowTm, rowTitle) : "");
         ctx.fillStyle = "#c9c2ab";
         var metaSize = 26;
         ctx.font = metaSize + "px " + SERIF;
