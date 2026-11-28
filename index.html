@@ -251,6 +251,10 @@
     position:relative;
     width:min(34vw, 16.4dvh, 200px); aspect-ratio:218/355;
     border-radius:8px;
+    /* a container so the oshi badge can size itself in cqw —
+       a fixed share of THIS frame's width, however small the
+       frame gets (game-over state, short-viewport breakpoints) */
+    container-type:inline-size;
   }
   .card-frame img.card-img{
     width:100%; height:100%; object-fit:cover; display:block;
@@ -350,13 +354,22 @@
 
   .guess-row{ margin-top:auto; }
 
-  /* oshi badge on cards */
+  /* oshi badge on cards: a small pill hugging the top-right
+     corner. Every metric is in cqw (a share of the card frame's
+     own width), so the badge keeps the same proportion on the
+     small game-over cards as on the full-size ones — the old
+     viewport-sized badge stayed big on the shrunken cards and
+     covered the face, and it was wide enough to reach the month
+     label at the top-left. At ~5cqw the text is about half its
+     old size, and the pill ends well clear of both the face
+     (top-centre) and the month label (top-left). */
   .oshi-badge{
-    position:absolute; top:6px; right:6px; z-index:3; display:none;
+    position:absolute; top:3.2cqw; right:3.2cqw; z-index:3; display:none;
     background:linear-gradient(180deg,#d84a44,var(--aka-dark)); color:#fff;
-    border:1px solid #f0b429; border-radius:6px;
-    font-size:clamp(11px,3vw,14px); font-weight:700; letter-spacing:.14em;
-    padding:3px 7px 3px 9px; line-height:1.25;
+    border:1px solid #f0b429; border-radius:999px;
+    font-size:max(5px,5.2cqw); font-weight:700; letter-spacing:.08em;
+    padding:1.1cqw 3.4cqw 1.1cqw 4cqw; line-height:1.3;
+    white-space:nowrap;
     box-shadow:0 2px 8px rgba(0,0,0,.5);
   }
   .oshi-badge.show{ display:block; }
@@ -3376,21 +3389,24 @@
         ctx.textAlign = "left";
         ctx.fillText(label, x + 38, y + 50);
         if (rec.oshis.indexOf(month) >= 0){
-          ctx.font = "700 38px " + SERIF;
+          /* small pill in the top-right corner, matching the
+             on-screen badge: about half the old text size, clear
+             of the face and the month label */
+          ctx.font = "700 22px " + SERIF;
           var ow2 = ctx.measureText(S.oshiBadge).width;
-          var bx = x + w - 16 - (ow2 + 44);
-          var og = ctx.createLinearGradient(0, y + 16, 0, y + 76);
+          var bx = x + w - 14 - (ow2 + 26);
+          var og = ctx.createLinearGradient(0, y + 14, 0, y + 52);
           og.addColorStop(0, "#d84a44");
           og.addColorStop(1, "#9c2b28");
           ctx.fillStyle = og;
-          rrPath(ctx, bx, y + 16, ow2 + 44, 60, 14);
+          rrPath(ctx, bx, y + 14, ow2 + 26, 38, 19);
           ctx.fill();
           ctx.strokeStyle = "#f0b429";
           ctx.lineWidth = 2;
-          rrPath(ctx, bx, y + 16, ow2 + 44, 60, 14);
+          rrPath(ctx, bx, y + 14, ow2 + 26, 38, 19);
           ctx.stroke();
           ctx.fillStyle = "#ffffff";
-          ctx.fillText(S.oshiBadge, bx + 22, y + 47);
+          ctx.fillText(S.oshiBadge, bx + 13, y + 41);
         }
         return h;
       }
