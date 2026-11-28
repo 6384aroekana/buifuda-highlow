@@ -1989,9 +1989,13 @@
   var oshiSel = [];
   /* stock: a separate rescue copy of each fave card, held outside
      the deck (the deck keeps all 12 cards; a fave can still come up
-     in normal play). stock[m].used spends that copy for the rest of
-     the game; stockSel is the month currently selected for a rescue
-     play, or null. Unused stock carries over between laps. */
+     in normal play until its stock copy is spent). stock[m].used
+     spends that copy for the rest of the game; spending it also
+     retires the deck's natural card of the same month for the rest
+     of the lap — the month counts as used and cannot turn up again
+     until the next lap rebuilds the full deck. stockSel is the
+     month currently selected for a rescue play, or null. Unused
+     stock carries over between laps. */
   var stock = {}, stockSel = null;
   function isOshi(m){ return oshiList.indexOf(m) >= 0; }
   /* play mode, chosen on the title screen and remembered on this
@@ -2736,14 +2740,26 @@
     /* rescue play: a selected stock card forces the next card to be
        that stock copy. The copy is spent the moment it is used, and
        the face-down natural card it displaces goes back into the
-       deck (it has not appeared yet, so the lap is unaffected). */
+       deck (it has not appeared yet, so the lap is unaffected) —
+       unless the displaced card IS this month's natural card, in
+       which case it is spent along with the stock copy. Spending a
+       stock copy also retires the deck's natural card of the same
+       month for the rest of this lap: it leaves the deck and the
+       month counts as used (gray in the strip, counted toward the
+       lap clear), so the same month cannot turn up again before
+       the next lap. If that natural card already appeared, it is
+       neither in the deck nor unmarked, and nothing changes. */
     var rescue = null;
     if (stockSel != null && stock[stockSel] && !stock[stockSel].used){
       rescue = stockSel;
       stock[rescue].used = true;
       stockSel = null;
-      deck.push(next);
+      if (next !== rescue) deck.push(next);
+      var deckIdx = deck.indexOf(rescue);
+      if (deckIdx >= 0) deck.splice(deckIdx, 1);
+      usedSet[rescue] = true;
       shuffle(deck);
+      renderStrip();
       next = rescue;
       nextImg.src = MONTHS[next].img;
       nextImg.alt = monthName(next);
@@ -2789,10 +2805,11 @@
            what the player reads is always what was scored. */
         var bonusPts = (isSpecialDay(revealed) || isSpecialDay(fromCard)) ? 5 : 3;
         var rescuePts = isSpecialDay(fromCard) ? 10 : 7;
-        /* the used-cards strip follows the DECK's progress: a stock
-           copy never marks its month as used — the deck's card of
-           that month is a separate card and can still appear */
-        if (!fromStock) usedSet[revealed] = true;
+        /* the revealed month counts as used for this lap. A natural
+           reveal is marked here; a stock reveal's month was already
+           marked when the stock copy was spent (its natural card
+           left the deck at that moment), so this is a no-op then. */
+        usedSet[revealed] = true;
         var lapClear = true;
         for (var m = 1; m <= 12; m++){ if (!usedSet[m]){ lapClear = false; break; } }
         if (special){
@@ -2821,7 +2838,11 @@
           if (lapClear){
             lap++;
             usedSet = {};
-            if (!fromStock) usedSet[revealed] = true;
+            /* the new lap starts with the field card's month used,
+               natural or stock copy alike; the deck itself is
+               rebuilt in full by drawNext, so a month retired by a
+               stock play last lap is back in play */
+            usedSet[revealed] = true;
             renderLap();
           }
           setCurrent(revealed);
